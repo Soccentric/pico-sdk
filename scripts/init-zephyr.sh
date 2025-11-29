@@ -1,11 +1,21 @@
 #!/bin/bash
 
-if [ -z "$1" ]; then
-    echo "Usage: zephyr-init <project-name>"
-    exit 1
-fi
+# Script to create firmware/zephyr directory and initialize a basic Zephyr project for Raspberry Pi Pico
 
-PROJECT_NAME=$1
+set -e
+
+echo "Creating firmware directory..."
+mkdir -p firmware
+
+echo "Creating firmware/zephyr directory..."
+mkdir -p firmware/zephyr
+
+echo "Initializing Zephyr project..."
+
+cd firmware/zephyr
+
+PROJECT_NAME="zephyr-project"
+
 mkdir -p $PROJECT_NAME
 cd $PROJECT_NAME
 

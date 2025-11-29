@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     libtool \
     libftdi-dev \
     libhidapi-dev \
+    west \
     ninja-build \
     && rm -rf /var/lib/apt/lists/*
 
