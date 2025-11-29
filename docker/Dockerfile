@@ -1,11 +1,7 @@
-FROM ubuntu:22.04
+FROM ubuntu:25.10
 
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive
-
-# Build arguments for user mapping
-ARG USER_ID=1000
-ARG GROUP_ID=1000
 
 # Install essential build tools and dependencies
 RUN apt-get update && apt-get install -y \
@@ -14,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     gcc-arm-none-eabi \
     libnewlib-arm-none-eabi \
     libstdc++-arm-none-eabi-newlib \
+    picolibc-arm-none-eabi \
     git \
     python3 \
     python3-pip \
@@ -26,18 +23,18 @@ RUN apt-get update && apt-get install -y \
     automake \
     autoconf \
     texinfo \
+    west \
     libjim-dev \
     jimsh \
-    pkg-config \
     libtool \
     libftdi-dev \
     libhidapi-dev \
-    west \
     ninja-build \
+    python3-jsonschema \
+    python3-pyelftools \
+    device-tree-compiler \
     && rm -rf /var/lib/apt/lists/*
 
-# Install west for Zephyr
-RUN pip3 install west
 
 # Set working directory
 WORKDIR /workspace
@@ -85,30 +82,24 @@ ENV PICO_EXTRAS_PATH=/opt/pico-extras
 ENV PICO_PLAYGROUND_PATH=/opt/pico-playground
 ENV PICO_ZEPHYR_PATH=/opt/pico-zephyr
 
-# Add helpful aliases and setup script
-RUN echo 'alias pico-sdk-update="cd /opt/pico-sdk && git pull && git submodule update"' >> /root/.bashrc && \
-    echo 'alias pico-examples="cd /opt/pico-examples"' >> /root/.bashrc && \
-    echo 'export PICO_SDK_PATH=/opt/pico-sdk' >> /root/.bashrc && \
-    echo 'export PICO_EXTRAS_PATH=/opt/pico-extras' >> /root/.bashrc && \
-    echo 'export PICO_PLAYGROUND_PATH=/opt/pico-playground' >> /root/.bashrc && \
-    echo 'export PICO_ZEPHYR_PATH=/opt/pico-zephyr' >> /root/.bashrc
+# Create ubuntu user home directory if it doesn't exist and add helpful aliases
+RUN mkdir -p /home/ubuntu && chown ubuntu:ubuntu /home/ubuntu && \
+    echo 'alias pico-sdk-update="cd /opt/pico-sdk && git pull && git submodule update"' >> /home/ubuntu/.bashrc && \
+    echo 'alias pico-examples="cd /opt/pico-examples"' >> /home/ubuntu/.bashrc && \
+    echo 'export PICO_SDK_PATH=/opt/pico-sdk' >> /home/ubuntu/.bashrc && \
+    echo 'export PICO_EXTRAS_PATH=/opt/pico-extras' >> /home/ubuntu/.bashrc && \
+    echo 'export PICO_PLAYGROUND_PATH=/opt/pico-playground' >> /home/ubuntu/.bashrc && \
+    echo 'export PICO_ZEPHYR_PATH=/opt/pico-zephyr' >> /home/ubuntu/.bashrc
 
 # Copy and install the pico-init script
-COPY pico-init.sh /usr/local/bin/pico-init
+COPY docker/pico-init.sh /usr/local/bin/pico-init
 RUN chmod +x /usr/local/bin/pico-init
 
-# Copy and install the zephyr-init script
-COPY zephyr-init.sh /usr/local/bin/zephyr-init
-RUN chmod +x /usr/local/bin/zephyr-init
+# Ensure /workspace is owned by ubuntu
+RUN chown ubuntu:ubuntu /workspace
 
-# Create a non-root user for building
-RUN groupadd -g $GROUP_ID pi || true && \
-    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash pi || true && \
-    mkdir -p /workspace && \
-    chown pi:pi /workspace
-
-# Switch to the pi user
-USER pi
+# Switch to the ubuntu user
+USER ubuntu
 
 # Set the working directory to /workspace for user projects
 WORKDIR /workspace
