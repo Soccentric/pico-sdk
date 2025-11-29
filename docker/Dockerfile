@@ -1,7 +1,11 @@
-FROM ubuntu:25.10
+FROM ubuntu:22.04
 
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive
+
+# Build arguments for user mapping
+ARG USER_ID=1000
+ARG GROUP_ID=1000
 
 # Install essential build tools and dependencies
 RUN apt-get update && apt-get install -y \
@@ -98,7 +102,8 @@ COPY zephyr-init.sh /usr/local/bin/zephyr-init
 RUN chmod +x /usr/local/bin/zephyr-init
 
 # Create a non-root user for building
-RUN useradd -m -s /bin/bash pi && \
+RUN groupadd -g $GROUP_ID pi || true && \
+    useradd -u $USER_ID -g $GROUP_ID -m -s /bin/bash pi || true && \
     mkdir -p /workspace && \
     chown pi:pi /workspace
 

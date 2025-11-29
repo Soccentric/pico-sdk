@@ -25,7 +25,7 @@ help:
 
 build:
 	@echo "Building Raspberry Pi Pico development image..."
-	docker build -t $(IMAGE_NAME) docker/
+	docker build --build-arg USER_ID=$(shell id -u) --build-arg GROUP_ID=$(shell id -g) -t $(IMAGE_NAME) docker/
 
 run:
 	docker run -it --rm \
