@@ -2,7 +2,7 @@ IMAGE_NAME = rpi-pico-dev
 CONTAINER_NAME = pico-dev
 ROOT_DIR = $(shell pwd)
 
-.PHONY: help run shell build-pico build-pico-w build-pico2 build-pico2-w init-freertos init-zephyr
+.PHONY: help run shell build build-pico build-pico-w build-pico2 build-pico2-w init init-freertos init-zephyr clean
 
 help:
 	@echo "Raspberry Pi Pico Development Makefile"
@@ -10,15 +10,22 @@ help:
 	@echo "Usage: make <target> PROJECT=<path/to/project>"
 	@echo ""
 	@echo "Available targets:"
+	@echo "  build         - Build the Docker image"
 	@echo "  run           - Run the Docker container interactively"
 	@echo "  shell         - Launch a shell in the Docker container"
 	@echo "  build-pico    - Build for Pico (H)"
 	@echo "  build-pico-w  - Build for Pico W (H)"
 	@echo "  build-pico2   - Build for Pico 2 (H)"
 	@echo "  build-pico2-w - Build for Pico 2 W (H)"
+	@echo "  init          - Initialize a new Pico project (usage: make init PROJECT=myproject)"
 	@echo "  init-freertos - Initialize a FreeRTOS project"
 	@echo "  init-zephyr   - Initialize a Zephyr project"
+	@echo "  clean         - Remove container and image"
 	@echo ""
+
+build:
+	@echo "Building Raspberry Pi Pico development image..."
+	docker build -t $(IMAGE_NAME) docker/
 
 run:
 	docker run -it --rm \
@@ -93,3 +100,20 @@ init-zephyr:
 		-v $(ROOT_DIR):/workspace \
 		$(IMAGE_NAME) \
 		./scripts/init-zephyr.sh
+
+init:
+	@if [ -z "$(PROJECT)" ]; then \
+		echo "Error: PROJECT name required. Usage: make init PROJECT=myproject"; \
+		exit 1; \
+	fi
+	@echo "Creating new Pico project: $(PROJECT)"
+	docker run --rm \
+		-v $(ROOT_DIR):/workspace \
+		$(IMAGE_NAME) \
+		/bin/bash -c "cd /workspace && pico-init $(PROJECT)"
+
+clean:
+	@echo "Cleaning up containers and images..."
+	-docker stop $(CONTAINER_NAME) 2>/dev/null || true
+	-docker rm $(CONTAINER_NAME) 2>/dev/null || true
+	-docker rmi $(IMAGE_NAME) 2>/dev/null || true
