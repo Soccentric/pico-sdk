@@ -306,9 +306,5 @@ init:
 
 # Cleanup
 clean:
-	@echo "Cleaning up containers and build artifacts..."
-	-docker stop $(CONTAINER_NAME) 2>/dev/null || true
-	-docker rm $(CONTAINER_NAME) 2>/dev/null || true
-	@echo "Removing firmware build directories..."
-	rm -rf $(ROOT_DIR)/firmware/freeRTOS/build
-	rm -rf $(ROOT_DIR)/firmware/zephyr/blinky/build
+	@echo "Cleaning up build artifacts..."
+	rm -rf $(ROOT_DIR)/firmware
