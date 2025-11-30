@@ -142,7 +142,11 @@ endif
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 	@echo "Step 1/3: Initializing Zephyr project..."
-	@$(MAKE) init-zephyr
+	@if [ ! -d "firmware/zephyr" ]; then \
+		$(MAKE) init-zephyr; \
+	else \
+		echo "Zephyr project already initialized, skipping..."; \
+	fi
 	@echo ""
 	@echo "Step 2/3: Building for $(BOARD)..."
 	docker run --rm \

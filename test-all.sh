@@ -40,6 +40,19 @@ ZEPHYR_BOARDS=("rpi_pico" "rpi_pico/rp2040/w" "rpi_pico2/rp2350a/m33" "rpi_pico2
 
 echo ""
 echo "=========================================="
+echo "Initializing Zephyr project"
+echo "=========================================="
+
+echo "Initializing Zephyr project..."
+if make init-zephyr; then
+    echo "✅ Zephyr initialization successful"
+else
+    echo "❌ Zephyr initialization failed"
+    exit 1
+fi
+
+echo ""
+echo "=========================================="
 echo "Building Zephyr for all boards"
 echo "=========================================="
 
