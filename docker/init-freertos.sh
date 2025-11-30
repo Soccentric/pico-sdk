@@ -93,15 +93,15 @@ cat > main.c << 'EOF'
 #include <task.h>
 
 // For Pico W, we need to use CYW43 for the LED
-#ifdef CYW43_WL_GPIO_LED_PIN
+#if defined(CYW43_WL_GPIO_LED_PIN) && !defined(PICO_RP2350)
 #include "pico/cyw43_arch.h"
 #define LED_INIT() cyw43_arch_init()
 #define LED_ON() cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 1)
 #define LED_OFF() cyw43_arch_gpio_put(CYW43_WL_GPIO_LED_PIN, 0)
 #else
-#define LED_INIT() do { gpio_init(PICO_DEFAULT_LED_PIN); gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT); } while(0)
-#define LED_ON() gpio_put(PICO_DEFAULT_LED_PIN, 1)
-#define LED_OFF() gpio_put(PICO_DEFAULT_LED_PIN, 0)
+#define LED_INIT() do { gpio_init(25); gpio_set_dir(25, GPIO_OUT); } while(0)
+#define LED_ON() gpio_put(25, 1)
+#define LED_OFF() gpio_put(25, 0)
 #endif
 
 void vTaskCode(void *pvParameters) {
