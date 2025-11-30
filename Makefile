@@ -30,7 +30,7 @@ help:
 	@echo "  make build                - Build the Docker image"
 	@echo "  make rebuild              - Clean and rebuild Docker image"
 	@echo "  make shell                - Launch interactive shell in container"
-	@echo "  make clean                - Remove container and image"
+	@echo "  make clean                - Remove container and firmware directory"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  PROJECT INITIALIZATION"
