@@ -2,7 +2,7 @@ IMAGE_NAME = rpi-pico-dev
 CONTAINER_NAME = pico-dev
 ROOT_DIR = $(shell pwd)
 
-.PHONY: help run shell build rebuild build-pico build-pico-w build-pico2 build-pico2-w init init-freertos init-zephyr clean check-docker freertos-all zephyr-all
+.PHONY: help run shell build rebuild build-pico build-pico-w build-pico2 build-pico2-w init init-freertos init-zephyr clean check-docker freertos-all zephyr-all test-all
 
 help:
 	@echo "Raspberry Pi Pico RTOS Development Environment"
@@ -31,6 +31,7 @@ help:
 	@echo "  make rebuild              - Clean and rebuild Docker image"
 	@echo "  make shell                - Launch interactive shell in container"
 	@echo "  make clean                - Remove container and firmware directory"
+	@echo "  make test-all             - Test all supported board builds"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  PROJECT INITIALIZATION"
@@ -68,7 +69,10 @@ help:
 	@echo "  make build-pico2-w PROJECT=path TYPE=freertos|zephyr"
 	@echo ""
 
-# Check if Docker image exists
+# Test all builds
+test-all:
+	@echo "Running comprehensive test of all supported boards..."
+	./test-all.sh
 check-docker:
 	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
 		(echo "Docker image '$(IMAGE_NAME)' not found. Building..." && $(MAKE) build)
