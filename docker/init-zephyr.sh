@@ -45,15 +45,18 @@ cat > src/main.c << 'EOF'
 
 #define SLEEP_TIME_MS 1000
 
+#if DT_NODE_EXISTS(DT_ALIAS(led0))
 /* The devicetree node identifier for the "led0" alias */
 #define LED0_NODE DT_ALIAS(led0)
 
 static const struct gpio_dt_spec led = GPIO_DT_SPEC_GET(LED0_NODE, gpios);
 
+#endif
+
 int main(void)
 {
+#if DT_NODE_EXISTS(DT_ALIAS(led0))
     int ret;
-    bool led_state = true;
 
     if (!gpio_is_ready_dt(&led)) {
         return 0;
@@ -71,6 +74,12 @@ int main(void)
         }
         k_msleep(SLEEP_TIME_MS);
     }
+#else
+    /* No LED available, just sleep */
+    while (1) {
+        k_msleep(SLEEP_TIME_MS);
+    }
+#endif
     return 0;
 }
 EOF
