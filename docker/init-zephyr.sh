@@ -8,8 +8,18 @@ set -euo pipefail
 
 # Configuration
 WORKSPACE_DIR="/workspace"
-PROJECT_DIR="${WORKSPACE_DIR}/firmware/zephyr"
-APP_NAME="${APP_NAME:-zephyr_app}"
+
+# Get project name from argument or use default
+if [ $# -ge 1 ]; then
+    PROJECT_NAME="$1"
+else
+    echo "Usage: $0 <project_name>"
+    echo "Example: $0 my_zephyr_app"
+    exit 1
+fi
+
+PROJECT_DIR="${WORKSPACE_DIR}/firmware/${PROJECT_NAME}"
+APP_NAME="${PROJECT_NAME}"
 
 # Colors for output
 RED='\033[0;31m'

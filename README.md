@@ -51,14 +51,14 @@ git clone https://github.com/Soccentric/pico-sdk.git
 cd pico-project
 
 # Build FreeRTOS for Pico (builds Docker image + initializes project + compiles)
-make freertos-all BOARD=pico
+make freertos-all BOARD=pico PROJECT=my_freertos_app
 ```
 
 ### One-Shot Zephyr Build
 
 ```bash
 # Build Zephyr for Pico (first run takes longer to download Zephyr)
-make zephyr-all BOARD=rpi_pico
+make zephyr-all BOARD=rpi_pico PROJECT=my_zephyr_app
 ```
 
 ### Flashing
@@ -67,11 +67,11 @@ make zephyr-all BOARD=rpi_pico
 2. Copy the `.uf2` file to the RPI-RP2 drive:
 
 ```bash
-# FreeRTOS
-cp firmware/freeRTOS/build/*.uf2 /media/$USER/RPI-RP2/
+# FreeRTOS (replace <project_name> with your project name)
+cp firmware/<project_name>/build/*.uf2 /media/$USER/RPI-RP2/
 
-# Zephyr
-cp firmware/zephyr/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
+# Zephyr (replace <project_name> with your project name)
+cp firmware/<project_name>/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
 ```
 
 ## Project Templates
@@ -98,7 +98,7 @@ The generated FreeRTOS project includes:
 - **Configurable** - Easy customization via header files
 
 ```
-firmware/freeRTOS/
+firmware/<project_name>/
 ├── CMakeLists.txt          # Production CMake config
 ├── Makefile                # Local build automation
 ├── config/
@@ -127,7 +127,7 @@ The generated Zephyr project includes:
 - **Runtime stats** - Thread and memory monitoring
 
 ```
-firmware/zephyr/app/
+firmware/<project_name>/app/
 ├── CMakeLists.txt          # Zephyr CMake config
 ├── Makefile                # Local build automation
 ├── Kconfig                 # App Kconfig options
@@ -149,8 +149,8 @@ firmware/zephyr/app/
 # Step 1: Build Docker environment (one-time)
 make build
 
-# Step 2: Initialize FreeRTOS project
-make init-freertos
+# Step 2: Initialize FreeRTOS project with a name
+make init-freertos PROJECT=my_freertos_app
 
 # Step 3: Build for your target board
 make build-freertos-pico       # Pico
@@ -168,8 +168,8 @@ make build-freertos-pico BUILD_TYPE=Debug
 # Step 1: Build Docker environment (one-time)
 make build
 
-# Step 2: Initialize Zephyr workspace (downloads ~2GB)
-make init-zephyr
+# Step 2: Initialize Zephyr workspace with a name (downloads ~2GB)
+make init-zephyr PROJECT=my_zephyr_app
 
 # Step 3: Build for your target board
 make build-zephyr-pico         # Pico
@@ -183,14 +183,14 @@ make build-zephyr-pico2-w      # Pico 2 W
 Each generated project has its own Makefile for local builds:
 
 ```bash
-# FreeRTOS local build
-cd firmware/freeRTOS
+# FreeRTOS local build (replace <project_name> with your project name)
+cd firmware/<project_name>
 make build BOARD=pico_w
 make clean
 make rebuild BOARD=pico
 
-# Zephyr local build
-cd firmware/zephyr/app
+# Zephyr local build (replace <project_name> with your project name)
+cd firmware/<project_name>/app
 make build BOARD=rpi_pico/rp2040/w
 make menuconfig  # Kconfig menu
 make clean
@@ -212,8 +212,8 @@ make clean
 
 | Target | Description |
 |--------|-------------|
-| `make freertos-all BOARD=<board>` | Complete FreeRTOS build |
-| `make zephyr-all BOARD=<board>` | Complete Zephyr build |
+| `make freertos-all BOARD=<board> PROJECT=<name>` | Complete FreeRTOS build |
+| `make zephyr-all BOARD=<board> PROJECT=<name>` | Complete Zephyr build |
 
 ### Individual Builds
 
@@ -248,9 +248,8 @@ pico-project/
 │   ├── init-zephyr.sh       # Zephyr project generator
 │   └── pico-init.sh         # Custom project generator
 └── firmware/                 # Generated projects (gitignored)
-    ├── freeRTOS/            # FreeRTOS project (standalone git repo)
-    └── zephyr/              # Zephyr workspace
-        └── app/             # Zephyr application (standalone git repo)
+    └── <project_name>/      # Your named project (standalone git repo)
+        └── app/             # Zephyr application directory (for Zephyr projects)
 ```
 
 ### Generated Project Features
@@ -297,13 +296,13 @@ make build
 ### Project Already Exists
 
 ```bash
-# Remove and reinitialize
-rm -rf firmware/freeRTOS
-make init-freertos
+# Remove and reinitialize (replace <project_name> with your project name)
+rm -rf firmware/<project_name>
+make init-freertos PROJECT=<project_name>
 
 # Or for Zephyr
-rm -rf firmware/zephyr
-make init-zephyr
+rm -rf firmware/<project_name>
+make init-zephyr PROJECT=<project_name>
 ```
 
 ### Build Errors
@@ -311,7 +310,7 @@ make init-zephyr
 ```bash
 # Clean rebuild
 make clean
-make freertos-all BOARD=pico
+make freertos-all BOARD=pico PROJECT=my_app
 ```
 
 ### Permission Issues

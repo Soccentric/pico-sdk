@@ -8,8 +8,17 @@ set -euo pipefail
 
 # Configuration
 WORKSPACE_DIR="/workspace"
-PROJECT_DIR="${WORKSPACE_DIR}/firmware/freeRTOS"
-PROJECT_NAME="${PROJECT_NAME:-freertos_app}"
+
+# Get project name from argument or use default
+if [ $# -ge 1 ]; then
+    PROJECT_NAME="$1"
+else
+    echo "Usage: $0 <project_name>"
+    echo "Example: $0 my_freertos_app"
+    exit 1
+fi
+
+PROJECT_DIR="${WORKSPACE_DIR}/firmware/${PROJECT_NAME}"
 
 # Colors for output
 RED='\033[0;31m'

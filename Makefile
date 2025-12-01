@@ -37,16 +37,16 @@ help:
 	@echo "  ─────────────────────────────────────────────────────────────────────"
 	@echo ""
 	@echo "  FreeRTOS (pico, pico_w, pico2, pico2_w):"
-	@echo "    make freertos-all BOARD=pico           Build for Pico"
-	@echo "    make freertos-all BOARD=pico_w         Build for Pico W"
-	@echo "    make freertos-all BOARD=pico2          Build for Pico 2"
-	@echo "    make freertos-all BOARD=pico2_w        Build for Pico 2 W"
+	@echo "    make freertos-all BOARD=pico PROJECT=myapp     Build for Pico"
+	@echo "    make freertos-all BOARD=pico_w PROJECT=myapp   Build for Pico W"
+	@echo "    make freertos-all BOARD=pico2 PROJECT=myapp    Build for Pico 2"
+	@echo "    make freertos-all BOARD=pico2_w PROJECT=myapp  Build for Pico 2 W"
 	@echo ""
 	@echo "  Zephyr:"
-	@echo "    make zephyr-all BOARD=rpi_pico         Build for Pico"
-	@echo "    make zephyr-all BOARD=rpi_pico/rp2040/w     Build for Pico W"
-	@echo "    make zephyr-all BOARD=rpi_pico2        Build for Pico 2"
-	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w Build for Pico 2 W"
+	@echo "    make zephyr-all BOARD=rpi_pico PROJECT=myapp   Build for Pico"
+	@echo "    make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=myapp  Build for Pico W"
+	@echo "    make zephyr-all BOARD=rpi_pico2 PROJECT=myapp  Build for Pico 2"
+	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=myapp  Build for Pico 2 W"
 	@echo ""
 	@echo "  DOCKER MANAGEMENT"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
@@ -60,9 +60,9 @@ help:
 	@echo "  PROJECT INITIALIZATION"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
 	@echo ""
-	@echo "    make init-freertos        Initialize FreeRTOS project"
-	@echo "    make init-zephyr          Initialize Zephyr project"
-	@echo "    make init PROJECT=name    Create custom Pico project"
+	@echo "    make init-freertos PROJECT=name   Initialize FreeRTOS project"
+	@echo "    make init-zephyr PROJECT=name     Initialize Zephyr project"
+	@echo "    make init PROJECT=name            Create custom Pico project"
 	@echo ""
 	@echo "  INDIVIDUAL BUILDS"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
@@ -140,25 +140,39 @@ run: check-docker
 freertos-all: check-docker
 ifndef BOARD
 	@echo "[ERROR] BOARD parameter required"
-	@echo "Usage: make freertos-all BOARD=pico|pico_w|pico2|pico2_w"
+	@echo "Usage: make freertos-all BOARD=pico|pico_w|pico2|pico2_w PROJECT=myproject"
+	@exit 1
+endif
+ifndef PROJECT
+	@echo "[ERROR] PROJECT name required"
+	@echo "Usage: make freertos-all BOARD=pico|pico_w|pico2|pico2_w PROJECT=myproject"
 	@exit 1
 endif
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  FreeRTOS One-Shot Build for $(BOARD)"
+	@echo "  FreeRTOS One-Shot Build for $(BOARD) - Project: $(PROJECT)"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "[STEP 1/2] Initializing FreeRTOS project..."
-	@$(MAKE) init-freertos
+	@if [ ! -d "firmware/$(PROJECT)" ]; then \
+		echo "[STEP 1/2] Initializing FreeRTOS project: $(PROJECT)..."; \
+		$(MAKE) init-freertos PROJECT=$(PROJECT); \
+	else \
+		echo "[STEP 1/2] FreeRTOS project $(PROJECT) already exists, skipping..."; \
+	fi
 	@echo ""
 	@echo "[STEP 2/2] Building for $(BOARD)..."
-	@$(MAKE) build-freertos-$(subst _,-,$(BOARD)) BUILD_TYPE=$(BUILD_TYPE)
+	docker run --rm \
+		--user ubuntu \
+		-v $(ROOT_DIR):/workspace \
+		$(IMAGE_NAME) \
+		./docker/build.sh -t freertos -p /workspace/firmware/$(PROJECT) -b $(BOARD) \
+			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  ✅ SUCCESS! FreeRTOS firmware ready"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "Firmware: firmware/freeRTOS/build/*.uf2"
+	@echo "Firmware: firmware/$(PROJECT)/build/*.uf2"
 	@echo ""
 	@echo "To flash:"
 	@echo "  1. Hold BOOTSEL button while connecting Pico"
@@ -168,19 +182,24 @@ endif
 zephyr-all: check-docker
 ifndef BOARD
 	@echo "[ERROR] BOARD parameter required"
-	@echo "Usage: make zephyr-all BOARD=rpi_pico|rpi_pico/rp2040/w|rpi_pico2|..."
+	@echo "Usage: make zephyr-all BOARD=rpi_pico|rpi_pico/rp2040/w|rpi_pico2|... PROJECT=myproject"
+	@exit 1
+endif
+ifndef PROJECT
+	@echo "[ERROR] PROJECT name required"
+	@echo "Usage: make zephyr-all BOARD=rpi_pico|rpi_pico/rp2040/w|rpi_pico2|... PROJECT=myproject"
 	@exit 1
 endif
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  Zephyr One-Shot Build for $(BOARD)"
+	@echo "  Zephyr One-Shot Build for $(BOARD) - Project: $(PROJECT)"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@if [ ! -d "firmware/zephyr/app" ]; then \
-		echo "[STEP 1/2] Initializing Zephyr project..."; \
-		$(MAKE) init-zephyr; \
+	@if [ ! -d "firmware/$(PROJECT)/app" ]; then \
+		echo "[STEP 1/2] Initializing Zephyr project: $(PROJECT)..."; \
+		$(MAKE) init-zephyr PROJECT=$(PROJECT); \
 	else \
-		echo "[STEP 1/2] Zephyr already initialized, skipping..."; \
+		echo "[STEP 1/2] Zephyr project $(PROJECT) already initialized, skipping..."; \
 	fi
 	@echo ""
 	@echo "[STEP 2/2] Building for $(BOARD)..."
@@ -188,13 +207,13 @@ endif
 		--user ubuntu \
 		-v $(ROOT_DIR):/workspace \
 		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b $(BOARD)
+		./docker/build.sh -t zephyr -p /workspace/firmware/$(PROJECT)/app -b $(BOARD)
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo "  ✅ SUCCESS! Zephyr firmware ready"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "Firmware: firmware/zephyr/app/build/zephyr/zephyr.uf2"
+	@echo "Firmware: firmware/$(PROJECT)/app/build/zephyr/zephyr.uf2"
 	@echo ""
 	@echo "To flash:"
 	@echo "  1. Hold BOOTSEL button while connecting Pico"
@@ -205,20 +224,30 @@ endif
 # Project Initialization
 #==============================================================================
 init-freertos: check-docker
-	@echo "[INFO] Initializing FreeRTOS project..."
+ifndef PROJECT
+	@echo "[ERROR] PROJECT name required"
+	@echo "Usage: make init-freertos PROJECT=myproject"
+	@exit 1
+endif
+	@echo "[INFO] Initializing FreeRTOS project: $(PROJECT)..."
 	docker run --rm \
 		--user ubuntu \
 		-v $(ROOT_DIR):/workspace \
 		$(IMAGE_NAME) \
-		./docker/init-freertos.sh
+		./docker/init-freertos.sh $(PROJECT)
 
 init-zephyr: check-docker
-	@echo "[INFO] Initializing Zephyr project (this may take a while)..."
+ifndef PROJECT
+	@echo "[ERROR] PROJECT name required"
+	@echo "Usage: make init-zephyr PROJECT=myproject"
+	@exit 1
+endif
+	@echo "[INFO] Initializing Zephyr project: $(PROJECT) (this may take a while)..."
 	docker run --rm \
 		--user ubuntu \
 		-v $(ROOT_DIR):/workspace \
 		$(IMAGE_NAME) \
-		./docker/init-zephyr.sh
+		./docker/init-zephyr.sh $(PROJECT)
 
 init: check-docker
 ifndef PROJECT
