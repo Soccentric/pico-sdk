@@ -1,6 +1,7 @@
 # Raspberry Pi Pico Development Docker Environment
 
 A complete Docker environment for Raspberry Pi Pico development with all necessary tools and SDKs.
+Supports FreeRTOS and Zephyr RTOS with project name-based project initialization.
 
 ## Features
 
@@ -15,53 +16,77 @@ This Docker image includes:
 - **picotool** - Tool for interacting with RP2040 devices in BOOTSEL mode
 - **OpenOCD** - Debugging support with Raspberry Pi fork
 - **Python 3** - For SDK scripts and tools
+- **FreeRTOS** - Real-time operating system support
+- **Zephyr RTOS** - Industrial-grade RTOS with west build system
 
 ## Quick Start
 
 ### 1. Build the Docker Image
 
 ```bash
-cd docker
+# From parent directory
 make build
+
+# Or from docker directory
+cd docker
+./build.sh
 ```
 
 This will take several minutes as it downloads and compiles all the tools.
 
-### 2. Create a New Pico Project
+### 2. Initialize a FreeRTOS Project
 
 ```bash
-make init PROJECT=my_pico_project
+# Initialize a FreeRTOS project with a custom name
+make init-freertos PROJECT=my_sensor_app
 ```
 
-This creates a new project directory with:
-- `CMakeLists.txt` - Pre-configured build file
-- `main.c` - Simple blink example
-- `build.sh` - Build script
+This creates a new project directory at `firmware/my_sensor_app/` with:
+- Production-ready FreeRTOS template
+- CMakeLists.txt with all configurations
+- Example tasks and LED driver
+- Portable Makefile for standalone builds
 
-### 3. Build Your Project
-
-Enter the development environment:
+### 3. Initialize a Zephyr Project
 
 ```bash
-make run
+# Initialize a Zephyr project with a custom name
+make init-zephyr PROJECT=my_zephyr_project
 ```
 
-Inside the container:
+This creates a new project at `firmware/my_zephyr_project/` with:
+- West-managed Zephyr workspace
+- Production-ready application template
+- Kconfig integration
+- Portable Makefile for standalone builds
+
+### 4. Build Your Project
 
 ```bash
-cd my_pico_project
-./build.sh
+# FreeRTOS builds
+make build-freertos-pico         # Pico
+make build-freertos-pico-w       # Pico W
+make build-freertos-pico2        # Pico 2
+make build-freertos-pico2-w      # Pico 2 W
+
+# Zephyr builds
+make build-zephyr-pico           # Pico
+make build-zephyr-pico-w         # Pico W
+make build-zephyr-pico2          # Pico 2
+make build-zephyr-pico2-w        # Pico 2 W
 ```
 
-The compiled `.uf2` file will be in `my_pico_project/build/`.
-
-### 4. Flash to Pico
+### 5. Flash to Pico
 
 1. Hold the BOOTSEL button on your Pico while connecting USB
 2. The Pico will mount as a USB drive
 3. Copy the `.uf2` file to the drive:
    ```bash
-   cp build/my_pico_project.uf2 /media/RPI-RP2/
+   # FreeRTOS (replace <project_name> with your project name)
+   cp firmware/<project_name>/build/*.uf2 /media/$USER/RPI-RP2/
+
+   # Zephyr (replace <project_name> with your project name)
+   cp firmware/<project_name>/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
    ```
 
 ## Usage

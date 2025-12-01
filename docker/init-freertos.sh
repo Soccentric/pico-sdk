@@ -1304,121 +1304,62 @@ EOF
 log_info "Creating project Makefile..."
 cat > Makefile << 'EOF'
 #==============================================================================
-# FreeRTOS Standalone Project Makefile
-# Portable build automation using Docker for Raspberry Pi Pico
-#
-# This project is self-contained and can be compiled independently.
-# It uses the rpi-pico-dev Docker image which contains:
-#   - Pico SDK
-#   - ARM GCC toolchain
-#   - CMake and build tools
-#   - FreeRTOS support
+# FreeRTOS Project Makefile
 #==============================================================================
-
-# Default board
-BOARD ?= pico
 
 # Docker configuration
 IMAGE_NAME := rpi-pico-dev
 PROJECT_DIR := $(shell pwd)
 
-# Build type: Debug or Release
+# Build configuration
 BUILD_TYPE ?= Release
-
-# Number of parallel jobs
+BOARD ?= pico
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 
-.PHONY: help build clean rebuild shell debug release check-docker
+.PHONY: help build clean rebuild shell debug release
 
 help:
 	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  FreeRTOS Standalone Project Build System"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  FreeRTOS Project - Available targets:"
 	@echo ""
-	@echo "  Usage: make <target> [BOARD=<board>] [BUILD_TYPE=<type>]"
-	@echo ""
-	@echo "  TARGETS:"
-	@echo "    build    - Build the project"
-	@echo "    clean    - Clean build artifacts"
-	@echo "    rebuild  - Clean and rebuild"
-	@echo "    shell    - Open interactive development shell"
-	@echo "    debug    - Build with debug symbols"
-	@echo "    release  - Build optimized release"
-	@echo ""
-	@echo "  BOARDS:"
-	@echo "    pico     - Raspberry Pi Pico (default)"
-	@echo "    pico_w   - Raspberry Pi Pico W"
-	@echo "    pico2    - Raspberry Pi Pico 2"
-	@echo "    pico2_w  - Raspberry Pi Pico 2 W"
-	@echo ""
-	@echo "  EXAMPLES:"
-	@echo "    make build BOARD=pico_w"
-	@echo "    make debug BOARD=pico2"
-	@echo "    make rebuild BOARD=pico BUILD_TYPE=Debug"
-	@echo ""
-	@echo "  REQUIREMENTS:"
-	@echo "    - Docker installed and running"
-	@echo "    - rpi-pico-dev Docker image (will be built if missing)"
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "    make build    - Build the project (Release)"
+	@echo "    make debug    - Build with debug symbols"
+	@echo "    make release  - Build optimized release"
+	@echo "    make clean    - Clean build artifacts"
+	@echo "    make rebuild  - Clean and rebuild"
+	@echo "    make shell    - Open development shell"
 	@echo ""
 
-check-docker:
+build:
 	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
-		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && \
-		 echo "Please build the Docker image first:" && \
-		 echo "  docker build -t $(IMAGE_NAME) -f path/to/Dockerfile ." && \
-		 echo "" && \
-		 echo "Or if you have the pico-project repository:" && \
-		 echo "  cd /path/to/pico-project && make build" && \
-		 exit 1)
-
-build: check-docker
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  Building FreeRTOS for $(BOARD) ($(BUILD_TYPE))"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	docker run --rm \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found. Run 'make build' in pico-project first." && exit 1)
+	@echo "[INFO] Building FreeRTOS ($(BUILD_TYPE))..."
+	@docker run --rm \
 		--user $$(id -u):$$(id -g) \
 		-v $(PROJECT_DIR):/project \
 		-w /project \
 		$(IMAGE_NAME) \
-		/bin/bash -c "\
-			mkdir -p build && cd build && \
-			cmake -DPICO_SDK_PATH=/opt/pico-sdk \
-			      -DPICO_BOARD=$(BOARD) \
-			      -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
-			      .. && \
+		/bin/bash -c "mkdir -p build && cd build && \
+			cmake -DPICO_SDK_PATH=/opt/pico-sdk -DPICO_BOARD=$(BOARD) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) .. && \
 			make -j$(JOBS)"
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  ✅ Build complete!"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "  Output: build/freertos_app.uf2"
-	@echo ""
-	@echo "  To flash:"
-	@echo "    1. Hold BOOTSEL button while connecting Pico"
-	@echo "    2. Copy .uf2 file to RPI-RP2 drive"
-	@echo ""
+	@echo "[SUCCESS] Build complete: build/*.uf2"
 
-debug: BUILD_TYPE=Debug
-debug: build
+debug:
+	@$(MAKE) build BUILD_TYPE=Debug
 
-release: BUILD_TYPE=Release
-release: build
+release:
+	@$(MAKE) build BUILD_TYPE=Release
 
 clean:
-	@echo "[INFO] Cleaning build artifacts..."
-	rm -rf build
+	@rm -rf build
+	@echo "[INFO] Build artifacts cleaned"
 
 rebuild: clean build
 
-shell: check-docker
-	@echo "[INFO] Starting interactive development shell..."
-	docker run -it --rm \
+shell:
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && exit 1)
+	@docker run -it --rm \
 		--user $$(id -u):$$(id -g) \
 		-v $(PROJECT_DIR):/project \
 		-w /project \

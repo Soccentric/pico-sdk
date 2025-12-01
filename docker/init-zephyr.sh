@@ -765,146 +765,80 @@ EOF
 log_info "Creating project Makefile..."
 cat > Makefile << 'EOF'
 #==============================================================================
-# Zephyr Standalone Project Makefile
-# Portable build automation using Docker for Raspberry Pi Pico
-#
-# This project is self-contained and can be compiled independently.
-# It uses the rpi-pico-dev Docker image which contains:
-#   - Zephyr RTOS
-#   - ARM GCC toolchain
-#   - West build tool
-#   - CMake and Ninja
+# Zephyr Project Makefile
 #==============================================================================
-
-# Default board
-BOARD ?= rpi_pico
 
 # Docker configuration
 IMAGE_NAME := rpi-pico-dev
 PROJECT_DIR := $(shell pwd)
 ZEPHYR_WORKSPACE := $(shell cd .. && pwd)
 
-# Build type
+# Build configuration
+BOARD ?= rpi_pico
 PRISTINE ?= auto
 
-# Number of parallel jobs
-JOBS ?= $(shell nproc 2>/dev/null || echo 4)
-
-.PHONY: help build clean rebuild shell menuconfig check-docker
+.PHONY: help build clean rebuild shell menuconfig
 
 help:
 	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  Zephyr Standalone Project Build System"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Zephyr Project - Available targets:"
 	@echo ""
-	@echo "  Usage: make <target> [BOARD=<board>]"
-	@echo ""
-	@echo "  TARGETS:"
-	@echo "    build      - Build the project"
-	@echo "    clean      - Clean build artifacts"
-	@echo "    rebuild    - Clean and rebuild"
-	@echo "    shell      - Open interactive development shell"
-	@echo "    menuconfig - Open Kconfig menu"
-	@echo ""
-	@echo "  BOARDS:"
-	@echo "    rpi_pico                    - Raspberry Pi Pico (default)"
-	@echo "    rpi_pico/rp2040/w           - Raspberry Pi Pico W"
-	@echo "    rpi_pico2                   - Raspberry Pi Pico 2"
-	@echo "    rpi_pico2/rp2350a/m33/w     - Raspberry Pi Pico 2 W"
-	@echo ""
-	@echo "  EXAMPLES:"
-	@echo "    make build BOARD=rpi_pico/rp2040/w"
-	@echo "    make rebuild BOARD=rpi_pico2"
-	@echo ""
-	@echo "  REQUIREMENTS:"
-	@echo "    - Docker installed and running"
-	@echo "    - rpi-pico-dev Docker image (will be built if missing)"
-	@echo "    - Zephyr workspace initialized (parent directory)"
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "    make build      - Build the project"
+	@echo "    make clean      - Clean build artifacts"
+	@echo "    make rebuild    - Clean and rebuild"
+	@echo "    make shell      - Open development shell"
+	@echo "    make menuconfig - Open Kconfig menu"
 	@echo ""
 
-check-docker:
+build:
 	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
-		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && \
-		 echo "Please build the Docker image first:" && \
-		 echo "  docker build -t $(IMAGE_NAME) -f path/to/Dockerfile ." && \
-		 echo "" && \
-		 echo "Or if you have the pico-project repository:" && \
-		 echo "  cd /path/to/pico-project && make build" && \
-		 exit 1)
-
-build: check-docker
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  Building Zephyr for $(BOARD)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	docker run --rm \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found. Run 'make build' in pico-project first." && exit 1)
+	@echo "[INFO] Building Zephyr..."
+	@docker run --rm \
 		--user $$(id -u):$$(id -g) \
 		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
 		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
-		/bin/bash -c "\
-			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
+		/bin/bash -c "export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr/zephyr-env.sh; \
-			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
-			fi && \
+			source /zephyr-workspace/zephyr/zephyr-env.sh 2>/dev/null || \
+			source /zephyr-workspace/zephyr-main/zephyr-env.sh 2>/dev/null || true && \
 			west build -b $(BOARD) -p $(PRISTINE) ."
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  ✅ Build complete!"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "  Output: build/zephyr/zephyr.uf2"
-	@echo ""
-	@echo "  To flash:"
-	@echo "    1. Hold BOOTSEL button while connecting Pico"
-	@echo "    2. Copy .uf2 file to RPI-RP2 drive"
-	@echo ""
+	@echo "[SUCCESS] Build complete: build/zephyr/zephyr.uf2"
 
 clean:
-	@echo "[INFO] Cleaning build artifacts..."
-	rm -rf build
+	@rm -rf build
+	@echo "[INFO] Build artifacts cleaned"
 
 rebuild: clean
-	$(MAKE) build PRISTINE=always
+	@$(MAKE) build PRISTINE=always
 
-shell: check-docker
-	@echo "[INFO] Starting interactive development shell..."
-	docker run -it --rm \
+shell:
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && exit 1)
+	@docker run -it --rm \
 		--user $$(id -u):$$(id -g) \
 		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
 		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
-		/bin/bash -c "\
-			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
+		/bin/bash -c "export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr/zephyr-env.sh; \
-			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
-			fi && \
+			source /zephyr-workspace/zephyr/zephyr-env.sh 2>/dev/null || \
+			source /zephyr-workspace/zephyr-main/zephyr-env.sh 2>/dev/null || true && \
 			/bin/bash"
 
-menuconfig: check-docker
-	docker run -it --rm \
+menuconfig:
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && exit 1)
+	@docker run -it --rm \
 		--user $$(id -u):$$(id -g) \
 		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
 		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
-		/bin/bash -c "\
-			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
+		/bin/bash -c "export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr/zephyr-env.sh; \
-			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
-				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
-			fi && \
+			source /zephyr-workspace/zephyr/zephyr-env.sh 2>/dev/null || \
+			source /zephyr-workspace/zephyr-main/zephyr-env.sh 2>/dev/null || true && \
 			west build -b $(BOARD) -t menuconfig"
 EOF
 

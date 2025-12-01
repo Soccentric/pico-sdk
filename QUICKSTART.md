@@ -7,12 +7,12 @@ Get your Raspberry Pi Pico running with FreeRTOS or Zephyr in minutes!
 ### One Command Build
 
 ```bash
-make freertos-all BOARD=pico
+make freertos-all BOARD=pico PROJECT=my_freertos_app
 ```
 
 This single command will:
 1. ✅ Build the Docker development environment
-2. ✅ Initialize a production-ready FreeRTOS project
+2. ✅ Initialize a production-ready FreeRTOS project named `my_freertos_app`
 3. ✅ Compile the firmware for your board
 4. ✅ Generate a `.uf2` file ready to flash
 
@@ -23,16 +23,16 @@ This single command will:
 3. **Release BOOTSEL** - Pico appears as USB drive (RPI-RP2)
 4. **Copy firmware**:
    ```bash
-   cp firmware/freeRTOS/build/*.uf2 /media/$USER/RPI-RP2/
+   cp firmware/my_freertos_app/build/*.uf2 /media/$USER/RPI-RP2/
    ```
 5. **Done!** LED starts blinking
 
 ### Other Boards
 
 ```bash
-make freertos-all BOARD=pico_w      # Pico W
-make freertos-all BOARD=pico2       # Pico 2
-make freertos-all BOARD=pico2_w     # Pico 2 W
+make freertos-all BOARD=pico_w PROJECT=my_app    # Pico W
+make freertos-all BOARD=pico2 PROJECT=my_app     # Pico 2
+make freertos-all BOARD=pico2_w PROJECT=my_app   # Pico 2 W
 ```
 
 ---
@@ -42,13 +42,13 @@ make freertos-all BOARD=pico2_w     # Pico 2 W
 ### One Command Build
 
 ```bash
-make zephyr-all BOARD=rpi_pico
+make zephyr-all BOARD=rpi_pico PROJECT=my_zephyr_app
 ```
 
 This single command will:
 1. ✅ Build the Docker development environment
 2. ✅ Initialize a Zephyr workspace with west
-3. ✅ Create a production-ready application
+3. ✅ Create a production-ready application named `my_zephyr_app`
 4. ✅ Compile the firmware for your board
 5. ✅ Generate a `.uf2` file ready to flash
 
@@ -59,16 +59,16 @@ This single command will:
 3. **Release BOOTSEL** - Pico appears as USB drive (RPI-RP2)
 4. **Copy firmware**:
    ```bash
-   cp firmware/zephyr/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
+   cp firmware/my_zephyr_app/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
    ```
 5. **Done!** LED starts blinking
 
 ### Other Boards
 
 ```bash
-make zephyr-all BOARD=rpi_pico/rp2040/w           # Pico W
-make zephyr-all BOARD=rpi_pico2                   # Pico 2
-make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w     # Pico 2 W
+make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=my_app        # Pico W
+make zephyr-all BOARD=rpi_pico2 PROJECT=my_app                # Pico 2
+make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=my_app  # Pico 2 W
 ```
 
 ---
@@ -81,7 +81,7 @@ They can be moved anywhere and compiled independently using the Docker image.
 ### FreeRTOS Project Structure
 
 ```
-firmware/freeRTOS/              # ← Standalone git repository
+firmware/<project_name>/        # ← Standalone git repository
 ├── .git/                   # Git initialized with "initial commit"
 ├── Makefile                # Portable, Docker-based build automation
 ├── CMakeLists.txt          # CMake configuration
@@ -106,7 +106,7 @@ firmware/freeRTOS/              # ← Standalone git repository
 ### Zephyr Project Structure
 
 ```
-firmware/zephyr/
+firmware/<project_name>/
 ├── .west/                  # West workspace
 ├── zephyr/                 # Zephyr RTOS
 ├── modules/                # Zephyr modules
@@ -136,8 +136,8 @@ firmware/zephyr/
 
 **FreeRTOS:**
 ```bash
-# Edit main application task
-nano firmware/freeRTOS/src/app_tasks.c
+# Edit main application task (replace <project_name> with your project name)
+nano firmware/<project_name>/src/app_tasks.c
 
 # Rebuild
 make build-freertos-pico
@@ -145,8 +145,8 @@ make build-freertos-pico
 
 **Zephyr:**
 ```bash
-# Edit main application
-nano firmware/zephyr/app/src/main.c
+# Edit main application (replace <project_name> with your project name)
+nano firmware/<project_name>/app/src/main.c
 
 # Rebuild
 make build-zephyr-pico
@@ -154,19 +154,25 @@ make build-zephyr-pico
 
 ### Use Local Makefiles
 
-Each project has its own standalone Makefile that works with Docker:
+Each project has its own simple Makefile:
 
 ```bash
-# FreeRTOS - can be run from anywhere!
-cd firmware/freeRTOS
-make build BOARD=pico_w
-make clean
-make rebuild BOARD=pico
+# FreeRTOS (replace <project_name> with your project name)
+cd firmware/<project_name>
+make build      # Build (Release)
+make debug      # Build with debug symbols
+make release    # Build optimized release
+make clean      # Clean build artifacts
+make rebuild    # Clean and rebuild
+make shell      # Open development shell
 
-# Zephyr - can be run from anywhere!
-cd firmware/zephyr/app
-make build BOARD=rpi_pico
-make menuconfig  # Kconfig menu
+# Zephyr (replace <project_name> with your project name)
+cd firmware/<project_name>/app
+make build      # Build the project
+make clean      # Clean build artifacts
+make rebuild    # Clean and rebuild
+make shell      # Open development shell
+make menuconfig # Open Kconfig menu
 ```
 
 ### Move Projects Anywhere
@@ -174,8 +180,8 @@ make menuconfig  # Kconfig menu
 Since each project is a standalone git repository with a portable Makefile:
 
 ```bash
-# Move FreeRTOS project to a new location
-mv firmware/freeRTOS ~/my-projects/pico-freertos
+# Move FreeRTOS project to a new location (replace <project_name> with your project name)
+mv firmware/<project_name> ~/my-projects/pico-freertos
 cd ~/my-projects/pico-freertos
 make build BOARD=pico  # Still works!
 
@@ -205,8 +211,8 @@ screen /dev/ttyACM0 115200
 # Remove generated projects
 rm -rf firmware/
 
-# Run one-shot build again
-make freertos-all BOARD=pico
+# Run one-shot build again with your project name
+make freertos-all BOARD=pico PROJECT=my_new_app
 ```
 
 ---
@@ -247,7 +253,7 @@ sudo usermod -a -G dialout,plugdev $USER
 # Clean everything and start over
 rm -rf firmware/
 make rebuild
-make freertos-all BOARD=pico
+make freertos-all BOARD=pico PROJECT=my_app
 ```
 
 ---

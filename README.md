@@ -180,20 +180,25 @@ make build-zephyr-pico2-w      # Pico 2 W
 
 ### Local Project Builds
 
-Each generated project has its own Makefile for local builds:
+Each generated project has its own simple Makefile for local builds:
 
 ```bash
 # FreeRTOS local build (replace <project_name> with your project name)
 cd firmware/<project_name>
-make build BOARD=pico_w
-make clean
-make rebuild BOARD=pico
+make build      # Build (Release)
+make debug      # Build with debug symbols
+make release    # Build optimized release
+make clean      # Clean build artifacts
+make rebuild    # Clean and rebuild
+make shell      # Open development shell
 
 # Zephyr local build (replace <project_name> with your project name)
 cd firmware/<project_name>/app
-make build BOARD=rpi_pico/rp2040/w
-make menuconfig  # Kconfig menu
-make clean
+make build      # Build the project
+make clean      # Clean build artifacts
+make rebuild    # Clean and rebuild
+make shell      # Open development shell
+make menuconfig # Open Kconfig menu
 ```
 
 ## Available Make Targets
