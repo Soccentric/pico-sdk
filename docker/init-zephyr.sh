@@ -755,7 +755,7 @@ BOARD ?= rpi_pico
 IMAGE_NAME := rpi-pico-dev
 PROJECT_ROOT := $(shell cd ../../.. && pwd)
 PROJECT_DIR := /workspace/firmware/zephyr/app
-ZEPHYR_BASE := /workspace/firmware/zephyr/zephyr
+ZEPHYR_BASE := /workspace/firmware/zephyr/zephyr-main
 
 # Build type
 PRISTINE ?= auto
