@@ -76,6 +76,15 @@ cp firmware/zephyr/app/build/zephyr/zephyr.uf2 /media/$USER/RPI-RP2/
 
 ## Project Templates
 
+### Standalone, Portable Projects
+
+All generated projects are **standalone** and **portable**:
+
+- Each project is a **git repository** with an "initial commit"
+- Projects can be compiled **independently** using the Docker image
+- Projects include a self-contained **Makefile** for easy builds
+- No dependency on the parent pico-project directory structure
+
 ### FreeRTOS Template Features
 
 The generated FreeRTOS project includes:
@@ -239,10 +248,19 @@ pico-project/
 │   ├── init-zephyr.sh       # Zephyr project generator
 │   └── pico-init.sh         # Custom project generator
 └── firmware/                 # Generated projects (gitignored)
-    ├── freeRTOS/            # FreeRTOS project
+    ├── freeRTOS/            # FreeRTOS project (standalone git repo)
     └── zephyr/              # Zephyr workspace
-        └── app/             # Zephyr application
+        └── app/             # Zephyr application (standalone git repo)
 ```
+
+### Generated Project Features
+
+Each generated project:
+- Is initialized as a **standalone git repository**
+- Has an **"initial commit"** with all template files
+- Includes a **portable Makefile** that works with the Docker image
+- Can be **moved anywhere** and built independently
+- Contains all necessary configuration and source files
 
 ## Customization
 

@@ -1178,18 +1178,20 @@ EOF
 # Create README.md
 log_info "Creating README.md..."
 cat > README.md << 'EOF'
-# FreeRTOS Project for Raspberry Pi Pico
+# FreeRTOS Standalone Project for Raspberry Pi Pico
 
-Production-ready FreeRTOS template for Raspberry Pi Pico/Pico W/Pico 2.
+A production-ready, standalone FreeRTOS template for Raspberry Pi Pico/Pico W/Pico 2.
+
+This project is **portable** and can be compiled independently using Docker.
 
 ## Project Structure
 
 ```
-firmware/freeRTOS/
+.
 ├── CMakeLists.txt          # Build configuration
 ├── Makefile                # Docker-based build automation
 ├── pico_sdk_import.cmake   # SDK integration
-├── FreeRTOS-Kernel/        # FreeRTOS kernel (cloned)
+├── FreeRTOS-Kernel/        # FreeRTOS kernel (git submodule)
 ├── config/
 │   └── FreeRTOSConfig.h    # FreeRTOS configuration
 ├── src/
@@ -1205,12 +1207,17 @@ firmware/freeRTOS/
 └── build/                  # Build output (generated)
 ```
 
+## Requirements
+
+- Docker installed and running
+- `rpi-pico-dev` Docker image
+
 ## Quick Start
 
-### Using the Makefile (Recommended)
+### Build
 
 ```bash
-# Build for Pico
+# Build for Pico (default)
 make build BOARD=pico
 
 # Build for Pico W
@@ -1219,6 +1226,12 @@ make build BOARD=pico_w
 # Build for Pico 2
 make build BOARD=pico2
 
+# Build for Pico 2 W
+make build BOARD=pico2_w
+
+# Debug build
+make debug BOARD=pico
+
 # Clean build
 make clean
 
@@ -1226,15 +1239,7 @@ make clean
 make rebuild BOARD=pico
 ```
 
-### Manual Build
-
-```bash
-mkdir build && cd build
-cmake -DPICO_SDK_PATH=/opt/pico-sdk -DPICO_BOARD=pico ..
-make -j$(nproc)
-```
-
-## Flashing
+### Flash
 
 1. Hold **BOOTSEL** button while connecting Pico to USB
 2. Copy `build/freertos_app.uf2` to the RPI-RP2 drive
@@ -1273,6 +1278,14 @@ Connect via USB serial (115200 baud) to see debug output:
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
+## Building the Docker Image
+
+If you don't have the `rpi-pico-dev` Docker image, you can build it from the
+pico-project repository or use the following Dockerfile requirements:
+- Ubuntu base with ARM GCC toolchain
+- Pico SDK installed at `/opt/pico-sdk`
+- CMake and build tools
+
 ## License
 
 MIT License - See LICENSE file for details.
@@ -1282,8 +1295,15 @@ EOF
 log_info "Creating project Makefile..."
 cat > Makefile << 'EOF'
 #==============================================================================
-# FreeRTOS Project Makefile
-# Docker-based build automation for Raspberry Pi Pico
+# FreeRTOS Standalone Project Makefile
+# Portable build automation using Docker for Raspberry Pi Pico
+#
+# This project is self-contained and can be compiled independently.
+# It uses the rpi-pico-dev Docker image which contains:
+#   - Pico SDK
+#   - ARM GCC toolchain
+#   - CMake and build tools
+#   - FreeRTOS support
 #==============================================================================
 
 # Default board
@@ -1291,72 +1311,108 @@ BOARD ?= pico
 
 # Docker configuration
 IMAGE_NAME := rpi-pico-dev
-PROJECT_ROOT := $(shell cd ../.. && pwd)
-PROJECT_DIR := /workspace/firmware/freeRTOS
+PROJECT_DIR := $(shell pwd)
 
 # Build type: Debug or Release
 BUILD_TYPE ?= Release
 
-.PHONY: help build clean rebuild shell debug release
+# Number of parallel jobs
+JOBS ?= $(shell nproc 2>/dev/null || echo 4)
+
+.PHONY: help build clean rebuild shell debug release check-docker
 
 help:
-	@echo "FreeRTOS Project Build System"
 	@echo ""
-	@echo "Usage: make <target> [BOARD=<board>] [BUILD_TYPE=<type>]"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  FreeRTOS Standalone Project Build System"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "Targets:"
-	@echo "  build    - Build the project"
-	@echo "  clean    - Clean build artifacts"
-	@echo "  rebuild  - Clean and rebuild"
-	@echo "  shell    - Open interactive shell"
-	@echo "  debug    - Build with debug symbols"
-	@echo "  release  - Build optimized release"
+	@echo "  Usage: make <target> [BOARD=<board>] [BUILD_TYPE=<type>]"
 	@echo ""
-	@echo "Boards:"
-	@echo "  pico     - Raspberry Pi Pico (default)"
-	@echo "  pico_w   - Raspberry Pi Pico W"
-	@echo "  pico2    - Raspberry Pi Pico 2"
-	@echo "  pico2_w  - Raspberry Pi Pico 2 W"
+	@echo "  TARGETS:"
+	@echo "    build    - Build the project"
+	@echo "    clean    - Clean build artifacts"
+	@echo "    rebuild  - Clean and rebuild"
+	@echo "    shell    - Open interactive development shell"
+	@echo "    debug    - Build with debug symbols"
+	@echo "    release  - Build optimized release"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make build BOARD=pico_w"
-	@echo "  make debug BOARD=pico2"
-	@echo "  make rebuild BOARD=pico BUILD_TYPE=Debug"
+	@echo "  BOARDS:"
+	@echo "    pico     - Raspberry Pi Pico (default)"
+	@echo "    pico_w   - Raspberry Pi Pico W"
+	@echo "    pico2    - Raspberry Pi Pico 2"
+	@echo "    pico2_w  - Raspberry Pi Pico 2 W"
+	@echo ""
+	@echo "  EXAMPLES:"
+	@echo "    make build BOARD=pico_w"
+	@echo "    make debug BOARD=pico2"
+	@echo "    make rebuild BOARD=pico BUILD_TYPE=Debug"
+	@echo ""
+	@echo "  REQUIREMENTS:"
+	@echo "    - Docker installed and running"
+	@echo "    - rpi-pico-dev Docker image (will be built if missing)"
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
 
-build:
-	@echo "Building FreeRTOS for $(BOARD) ($(BUILD_TYPE))..."
+check-docker:
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && \
+		 echo "Please build the Docker image first:" && \
+		 echo "  docker build -t $(IMAGE_NAME) -f path/to/Dockerfile ." && \
+		 echo "" && \
+		 echo "Or if you have the pico-project repository:" && \
+		 echo "  cd /path/to/pico-project && make build" && \
+		 exit 1)
+
+build: check-docker
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Building FreeRTOS for $(BOARD) ($(BUILD_TYPE))"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
 	docker run --rm \
-		--user ubuntu \
-		-v $(PROJECT_ROOT):/workspace \
+		--user $$(id -u):$$(id -g) \
+		-v $(PROJECT_DIR):/project \
+		-w /project \
 		$(IMAGE_NAME) \
 		/bin/bash -c "\
-			cd $(PROJECT_DIR) && \
 			mkdir -p build && cd build && \
 			cmake -DPICO_SDK_PATH=/opt/pico-sdk \
 			      -DPICO_BOARD=$(BOARD) \
 			      -DCMAKE_BUILD_TYPE=$(BUILD_TYPE) \
 			      .. && \
-			make -j\$$(nproc)"
+			make -j$(JOBS)"
 	@echo ""
-	@echo "Build complete! Output: build/freertos_app.uf2"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  ✅ Build complete!"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "  Output: build/freertos_app.uf2"
+	@echo ""
+	@echo "  To flash:"
+	@echo "    1. Hold BOOTSEL button while connecting Pico"
+	@echo "    2. Copy .uf2 file to RPI-RP2 drive"
+	@echo ""
 
-debug:
-	$(MAKE) build BUILD_TYPE=Debug
+debug: BUILD_TYPE=Debug
+debug: build
 
-release:
-	$(MAKE) build BUILD_TYPE=Release
+release: BUILD_TYPE=Release
+release: build
 
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "[INFO] Cleaning build artifacts..."
 	rm -rf build
 
 rebuild: clean build
 
-shell:
+shell: check-docker
+	@echo "[INFO] Starting interactive development shell..."
 	docker run -it --rm \
-		--user ubuntu \
-		-v $(PROJECT_ROOT):/workspace \
-		-w $(PROJECT_DIR) \
+		--user $$(id -u):$$(id -g) \
+		-v $(PROJECT_DIR):/project \
+		-w /project \
 		$(IMAGE_NAME) \
 		/bin/bash
 EOF
@@ -1380,6 +1436,9 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
+
+# FreeRTOS Kernel (cloned dependency)
+FreeRTOS-Kernel/
 EOF
 
 # Clone FreeRTOS-Kernel
@@ -1389,14 +1448,37 @@ if [ ! -d "FreeRTOS-Kernel" ]; then
     git clone https://github.com/FreeRTOS/FreeRTOS-Kernel.git --depth 1
 fi
 
+# Initialize git repository and create initial commit
+log_info "Initializing git repository..."
+cd "${PROJECT_DIR}"
+
+# Remove any existing git directory (in case of partial init)
+rm -rf .git
+
+# Initialize new git repository
+git init
+
+# Configure git user for the commit (use generic values if not set)
+git config user.email "developer@pico-project.local"
+git config user.name "Pico Developer"
+
+# Add all files
+git add -A
+
+# Create initial commit
+git commit -m "initial commit"
+
 log_success "FreeRTOS project created successfully!"
 echo ""
 echo "Project location: ${PROJECT_DIR}"
 echo ""
-echo "Quick start:"
-echo "  cd ${PROJECT_DIR}"
+echo "This is a standalone, portable project that can be compiled independently."
+echo ""
+echo "Quick start (from this directory):"
 echo "  make build BOARD=pico"
 echo ""
-echo "Or from project root:"
+echo "Or from the parent pico-project directory:"
 echo "  make build-freertos-pico"
+echo ""
+echo "The project has been initialized as a git repository with an initial commit."
 echo ""

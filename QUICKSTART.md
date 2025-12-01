@@ -75,12 +75,17 @@ make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w     # Pico 2 W
 
 ## What Gets Created?
 
+All generated projects are **standalone git repositories** with an "initial commit".
+They can be moved anywhere and compiled independently using the Docker image.
+
 ### FreeRTOS Project Structure
 
 ```
-firmware/freeRTOS/
-├── Makefile                # Local build automation
+firmware/freeRTOS/              # ← Standalone git repository
+├── .git/                   # Git initialized with "initial commit"
+├── Makefile                # Portable, Docker-based build automation
 ├── CMakeLists.txt          # CMake configuration
+├── pico_sdk_import.cmake   # SDK integration (portable)
 ├── config/
 │   └── FreeRTOSConfig.h    # RTOS kernel config
 ├── src/
@@ -105,8 +110,9 @@ firmware/zephyr/
 ├── .west/                  # West workspace
 ├── zephyr/                 # Zephyr RTOS
 ├── modules/                # Zephyr modules
-└── app/
-    ├── Makefile            # Local build automation
+└── app/                        # ← Standalone git repository
+    ├── .git/               # Git initialized with "initial commit"
+    ├── Makefile            # Portable, Docker-based build automation
     ├── CMakeLists.txt      # CMake configuration
     ├── Kconfig             # App Kconfig
     ├── prj.conf            # Project config
@@ -148,19 +154,32 @@ make build-zephyr-pico
 
 ### Use Local Makefiles
 
-Each project has its own Makefile:
+Each project has its own standalone Makefile that works with Docker:
 
 ```bash
-# FreeRTOS
+# FreeRTOS - can be run from anywhere!
 cd firmware/freeRTOS
 make build BOARD=pico_w
 make clean
 make rebuild BOARD=pico
 
-# Zephyr
+# Zephyr - can be run from anywhere!
 cd firmware/zephyr/app
 make build BOARD=rpi_pico
 make menuconfig  # Kconfig menu
+```
+
+### Move Projects Anywhere
+
+Since each project is a standalone git repository with a portable Makefile:
+
+```bash
+# Move FreeRTOS project to a new location
+mv firmware/freeRTOS ~/my-projects/pico-freertos
+cd ~/my-projects/pico-freertos
+make build BOARD=pico  # Still works!
+
+# Projects only need Docker + rpi-pico-dev image
 ```
 
 ### Debug Build

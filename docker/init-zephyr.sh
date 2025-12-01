@@ -633,14 +633,16 @@ EOF
 # Create README
 log_info "Creating README.md..."
 cat > README.md << 'EOF'
-# Zephyr Application for Raspberry Pi Pico
+# Zephyr Standalone Application for Raspberry Pi Pico
 
-Production-ready Zephyr template for Raspberry Pi Pico/Pico W/Pico 2.
+A production-ready, standalone Zephyr template for Raspberry Pi Pico/Pico W/Pico 2.
+
+This project is **portable** and can be compiled independently using Docker.
 
 ## Project Structure
 
 ```
-firmware/zephyr/app/
+.
 ├── CMakeLists.txt          # Build configuration
 ├── Makefile                # Docker-based build automation
 ├── Kconfig                 # Application Kconfig options
@@ -655,12 +657,18 @@ firmware/zephyr/app/
 └── build/                  # Build output (generated)
 ```
 
+## Requirements
+
+- Docker installed and running
+- `rpi-pico-dev` Docker image
+- Zephyr workspace (parent directory with `zephyr/` or `zephyr-main/`)
+
 ## Quick Start
 
-### Using the Makefile (Recommended)
+### Build
 
 ```bash
-# Build for Pico
+# Build for Pico (default)
 make build BOARD=rpi_pico
 
 # Build for Pico W
@@ -669,6 +677,9 @@ make build BOARD=rpi_pico/rp2040/w
 # Build for Pico 2
 make build BOARD=rpi_pico2
 
+# Build for Pico 2 W
+make build BOARD=rpi_pico2/rp2350a/m33/w
+
 # Clean build
 make clean
 
@@ -676,15 +687,7 @@ make clean
 make rebuild BOARD=rpi_pico
 ```
 
-### Manual Build with West
-
-```bash
-west build -b rpi_pico
-west build -b rpi_pico/rp2040/w
-west build -b rpi_pico2
-```
-
-## Flashing
+### Flash
 
 1. Hold **BOOTSEL** button while connecting Pico to USB
 2. Copy `build/zephyr/zephyr.uf2` to the RPI-RP2 drive
@@ -727,6 +730,14 @@ Connect via USB serial (115200 baud) to see log output:
 minicom -D /dev/ttyACM0 -b 115200
 ```
 
+## Building the Docker Image
+
+If you don't have the `rpi-pico-dev` Docker image, you can build it from the
+pico-project repository or ensure your Docker image has:
+- Ubuntu base with ARM GCC toolchain
+- Zephyr SDK and west tool
+- CMake and Ninja build tools
+
 ## Features
 
 - **Multiple threads** with proper priority configuration
@@ -744,8 +755,15 @@ EOF
 log_info "Creating project Makefile..."
 cat > Makefile << 'EOF'
 #==============================================================================
-# Zephyr Project Makefile
-# Docker-based build automation for Raspberry Pi Pico
+# Zephyr Standalone Project Makefile
+# Portable build automation using Docker for Raspberry Pi Pico
+#
+# This project is self-contained and can be compiled independently.
+# It uses the rpi-pico-dev Docker image which contains:
+#   - Zephyr RTOS
+#   - ARM GCC toolchain
+#   - West build tool
+#   - CMake and Ninja
 #==============================================================================
 
 # Default board
@@ -753,81 +771,130 @@ BOARD ?= rpi_pico
 
 # Docker configuration
 IMAGE_NAME := rpi-pico-dev
-PROJECT_ROOT := $(shell cd ../../.. && pwd)
-PROJECT_DIR := /workspace/firmware/zephyr/app
-ZEPHYR_BASE := /workspace/firmware/zephyr/zephyr-main
+PROJECT_DIR := $(shell pwd)
+ZEPHYR_WORKSPACE := $(shell cd .. && pwd)
 
 # Build type
 PRISTINE ?= auto
 
-.PHONY: help build clean rebuild shell menuconfig
+# Number of parallel jobs
+JOBS ?= $(shell nproc 2>/dev/null || echo 4)
+
+.PHONY: help build clean rebuild shell menuconfig check-docker
 
 help:
-	@echo "Zephyr Project Build System"
 	@echo ""
-	@echo "Usage: make <target> [BOARD=<board>]"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Zephyr Standalone Project Build System"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "Targets:"
-	@echo "  build      - Build the project"
-	@echo "  clean      - Clean build artifacts"
-	@echo "  rebuild    - Clean and rebuild"
-	@echo "  shell      - Open interactive shell"
-	@echo "  menuconfig - Open Kconfig menu"
+	@echo "  Usage: make <target> [BOARD=<board>]"
 	@echo ""
-	@echo "Boards:"
-	@echo "  rpi_pico             - Raspberry Pi Pico (default)"
-	@echo "  rpi_pico/rp2040/w    - Raspberry Pi Pico W"
-	@echo "  rpi_pico2            - Raspberry Pi Pico 2"
-	@echo "  rpi_pico2/rp2350a/m33/w - Raspberry Pi Pico 2 W"
+	@echo "  TARGETS:"
+	@echo "    build      - Build the project"
+	@echo "    clean      - Clean build artifacts"
+	@echo "    rebuild    - Clean and rebuild"
+	@echo "    shell      - Open interactive development shell"
+	@echo "    menuconfig - Open Kconfig menu"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make build BOARD=rpi_pico/rp2040/w"
-	@echo "  make rebuild BOARD=rpi_pico2"
+	@echo "  BOARDS:"
+	@echo "    rpi_pico                    - Raspberry Pi Pico (default)"
+	@echo "    rpi_pico/rp2040/w           - Raspberry Pi Pico W"
+	@echo "    rpi_pico2                   - Raspberry Pi Pico 2"
+	@echo "    rpi_pico2/rp2350a/m33/w     - Raspberry Pi Pico 2 W"
+	@echo ""
+	@echo "  EXAMPLES:"
+	@echo "    make build BOARD=rpi_pico/rp2040/w"
+	@echo "    make rebuild BOARD=rpi_pico2"
+	@echo ""
+	@echo "  REQUIREMENTS:"
+	@echo "    - Docker installed and running"
+	@echo "    - rpi-pico-dev Docker image (will be built if missing)"
+	@echo "    - Zephyr workspace initialized (parent directory)"
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
 
-build:
-	@echo "Building Zephyr for $(BOARD)..."
+check-docker:
+	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
+		(echo "[ERROR] Docker image '$(IMAGE_NAME)' not found." && \
+		 echo "Please build the Docker image first:" && \
+		 echo "  docker build -t $(IMAGE_NAME) -f path/to/Dockerfile ." && \
+		 echo "" && \
+		 echo "Or if you have the pico-project repository:" && \
+		 echo "  cd /path/to/pico-project && make build" && \
+		 exit 1)
+
+build: check-docker
+	@echo ""
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  Building Zephyr for $(BOARD)"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
 	docker run --rm \
-		--user ubuntu \
-		-v $(PROJECT_ROOT):/workspace \
+		--user $$(id -u):$$(id -g) \
+		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
+		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
 		/bin/bash -c "\
 			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			source $(ZEPHYR_BASE)/zephyr-env.sh && \
-			cd $(PROJECT_DIR) && \
+			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr/zephyr-env.sh; \
+			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
+			fi && \
 			west build -b $(BOARD) -p $(PRISTINE) ."
 	@echo ""
-	@echo "Build complete! Output: build/zephyr/zephyr.uf2"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo "  ✅ Build complete!"
+	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+	@echo ""
+	@echo "  Output: build/zephyr/zephyr.uf2"
+	@echo ""
+	@echo "  To flash:"
+	@echo "    1. Hold BOOTSEL button while connecting Pico"
+	@echo "    2. Copy .uf2 file to RPI-RP2 drive"
+	@echo ""
 
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "[INFO] Cleaning build artifacts..."
 	rm -rf build
 
 rebuild: clean
 	$(MAKE) build PRISTINE=always
 
-shell:
+shell: check-docker
+	@echo "[INFO] Starting interactive development shell..."
 	docker run -it --rm \
-		--user ubuntu \
-		-v $(PROJECT_ROOT):/workspace \
-		-w $(PROJECT_DIR) \
+		--user $$(id -u):$$(id -g) \
+		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
+		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
 		/bin/bash -c "\
 			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			source $(ZEPHYR_BASE)/zephyr-env.sh && \
+			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr/zephyr-env.sh; \
+			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
+			fi && \
 			/bin/bash"
 
-menuconfig:
+menuconfig: check-docker
 	docker run -it --rm \
-		--user ubuntu \
-		-v $(PROJECT_ROOT):/workspace \
+		--user $$(id -u):$$(id -g) \
+		-v $(ZEPHYR_WORKSPACE):/zephyr-workspace \
+		-w /zephyr-workspace/app \
 		$(IMAGE_NAME) \
 		/bin/bash -c "\
 			export ZEPHYR_TOOLCHAIN_VARIANT=gnuarmemb && \
 			export GNUARMEMB_TOOLCHAIN_PATH=/usr && \
-			source $(ZEPHYR_BASE)/zephyr-env.sh && \
-			cd $(PROJECT_DIR) && \
+			if [ -f /zephyr-workspace/zephyr/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr/zephyr-env.sh; \
+			elif [ -f /zephyr-workspace/zephyr-main/zephyr-env.sh ]; then \
+				source /zephyr-workspace/zephyr-main/zephyr-env.sh; \
+			fi && \
 			west build -b $(BOARD) -t menuconfig"
 EOF
 
@@ -852,14 +919,38 @@ build/
 Thumbs.db
 EOF
 
+# Initialize git repository and create initial commit
+log_info "Initializing git repository for the application..."
+cd "${PROJECT_DIR}/app"
+
+# Remove any existing git directory (in case of partial init)
+rm -rf .git
+
+# Initialize new git repository
+git init
+
+# Configure git user for the commit (use generic values if not set)
+git config user.email "developer@pico-project.local"
+git config user.name "Pico Developer"
+
+# Add all files
+git add -A
+
+# Create initial commit
+git commit -m "initial commit"
+
 log_success "Zephyr project created successfully!"
 echo ""
 echo "Project location: ${PROJECT_DIR}/app"
 echo ""
-echo "Quick start:"
+echo "This is a standalone, portable application that can be compiled independently."
+echo ""
+echo "Quick start (from the app directory):"
 echo "  cd ${PROJECT_DIR}/app"
 echo "  make build BOARD=rpi_pico"
 echo ""
-echo "Or from project root:"
+echo "Or from the parent pico-project directory:"
 echo "  make build-zephyr-pico"
+echo ""
+echo "The application has been initialized as a git repository with an initial commit."
 echo ""
