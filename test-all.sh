@@ -129,7 +129,7 @@ build_start_time=$(date +%s)
 
 # FreeRTOS boards
 # Note: pico2/pico2_w (RP2350) not yet supported - requires FreeRTOS RP2350 port
-FREERTOS_BOARDS=("pico" "pico_w")
+FREERTOS_BOARDS=("pico" "pico_w" "pico2" "pico2_w")
 
 # Zephyr boards
 ZEPHYR_BOARDS=(
