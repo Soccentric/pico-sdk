@@ -195,14 +195,6 @@ static void monitor_thread(void *p1, void *p2, void *p3)
         }
 #endif
         
-        /* Report memory statistics */
-#ifdef CONFIG_HEAP_MEM_POOL_SIZE
-        struct sys_memory_stats mem_stats;
-        sys_heap_runtime_stats_get(&_system_heap, &mem_stats);
-        LOG_INF("Heap: %zu free, %zu allocated", 
-                mem_stats.free_bytes, mem_stats.allocated_bytes);
-#endif
-        
         k_msleep(CONFIG_MONITOR_PERIOD_MS);
     }
 }
@@ -219,8 +211,6 @@ int main(void)
     LOG_INF("========================================");
     LOG_INF("  Zephyr Application v%d.%d.%d", 
             APP_VERSION_MAJOR, APP_VERSION_MINOR, APP_VERSION_PATCH);
-    LOG_INF("  Board: %s", CONFIG_BOARD);
-    LOG_INF("  Zephyr: %s", KERNEL_VERSION_STRING);
     LOG_INF("========================================");
     
     /* Create heartbeat thread */
