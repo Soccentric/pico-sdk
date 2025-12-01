@@ -1,6 +1,37 @@
 # Raspberry Pi Pico RTOS Development Environment
 
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
+
 Docker-based development environment for creating **Raspberry Pi Pico** projects using **FreeRTOS** or **Zephyr RTOS**. Supports all Pico variants: Pico, Pico W, Pico 2, and Pico 2 W.
+
+## Table of Contents
+
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Detailed Workflows](#detailed-workflows)
+- [Available Make Targets](#available-make-targets)
+- [What's Included](#whats-included)
+- [Board Variants](#board-variants)
+- [Troubleshooting](#troubleshooting)
+- [Project Architecture](#project-architecture)
+- [Advanced Usage](#advanced-usage)
+- [Contributing](#contributing)
+- [Resources](#resources)
+- [License](#license)
+
+## Prerequisites
+
+- **Docker**: Version 20.10 or later
+- **Make**: GNU Make utility
+- **USB Cable**: For flashing firmware to Pico
+- **Git**: For cloning submodules (FreeRTOS)
+
+### System Requirements
+
+- Linux, macOS, or Windows with WSL2
+- At least 4GB RAM available
+- 10GB free disk space for Docker images and builds
 
 ## Quick Start
 
@@ -200,8 +231,6 @@ pico-project/
     ├── freeRTOS/
     └── zephyr/
 ```
-    └── zephyr/
-```
 
 ## Advanced Usage
 
@@ -243,6 +272,48 @@ CONFIG_BLUETOOTH=y
 - [Getting Started with Pico](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf)
 - [RP2040 Datasheet](https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf)
 
+## Contributing
+
+We welcome contributions to improve this development environment!
+
+### Development Setup
+
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/yourusername/pico-project.git`
+3. Create a feature branch: `git checkout -b feature/your-feature`
+4. Make your changes
+5. Test thoroughly with different board variants
+6. Submit a pull request
+
+### Guidelines
+
+- Follow the existing code style and structure
+- Update documentation for any new features
+- Test builds on all supported board variants
+- Ensure Docker builds work correctly
+- Add appropriate error handling
+
+### Reporting Issues
+
+Please report bugs or request features using the [GitHub Issues](https://github.com/Soccentric/pico-sdk/issues) page. Include:
+
+- Board variant used
+- RTOS (FreeRTOS or Zephyr)
+- Steps to reproduce
+- Expected vs actual behavior
+- Docker and system information
+
 ## License
 
-This project structure is provided as-is for Raspberry Pi Pico development. Individual components (Pico SDK, FreeRTOS, Zephyr) have their own licenses.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+### Component Licenses
+
+This project includes or references several open-source components:
+
+- **Raspberry Pi Pico SDK**: BSD 3-Clause License
+- **FreeRTOS Kernel**: MIT License
+- **Zephyr RTOS**: Apache 2.0 License
+- **Docker Environment**: Based on Ubuntu, licensed under various open-source licenses
+
+Please refer to the respective repositories and documentation for detailed licensing information.
