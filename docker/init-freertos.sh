@@ -94,8 +94,17 @@ target_include_directories(freertos_config SYSTEM INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/config
 )
 
-# Set the FreeRTOS port for RP2040/RP2350
-set(FREERTOS_PORT GCC_RP2040 CACHE STRING "FreeRTOS port")
+# Set the FreeRTOS port based on the target platform
+# RP2350 (Pico 2) uses ARM Cortex-M33, RP2040 uses ARM Cortex-M0+
+if(PICO_PLATFORM MATCHES "rp2350")
+    set(FREERTOS_PORT GCC_ARM_CM33_NTZ_NONSECURE CACHE STRING "FreeRTOS port" FORCE)
+    # Pass RP2350 define to FreeRTOSConfig.h
+    target_compile_definitions(freertos_config INTERFACE
+        PICO_RP2350=1
+    )
+else()
+    set(FREERTOS_PORT GCC_RP2040 CACHE STRING "FreeRTOS port")
+endif()
 
 # Heap implementation: heap_4 recommended for most applications
 # heap_1: simplest, no free
@@ -1096,10 +1105,23 @@ cat > config/FreeRTOSConfig.h << 'EOF'
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   191
 
 /*============================================================================*/
-/* MPU Configuration (not available on RP2040)                                 */
+/* ARM Cortex-M33 Specific Configuration (RP2350/Pico 2)                       */
+/* These must be defined BEFORE FreeRTOS headers are included                  */
 /*============================================================================*/
 
+#if defined(PICO_RP2350) || defined(PICO_PLATFORM_RP2350)
+/* Enable FPU support - RP2350 has FPU */
+#define configENABLE_FPU                        1
+
+/* Disable TrustZone - using non-secure mode (NTZ port) */
+#define configENABLE_TRUSTZONE                  0
+
+/* Disable MPU for now */
 #define configENABLE_MPU                        0
+
+/* Required for ARM_CM33_NTZ port - run in non-secure mode only */
+#define configRUN_FREERTOS_SECURE_ONLY          1
+#endif
 
 /*============================================================================*/
 /* RP2040/RP2350 Specific - Pico SDK Integration                               */
