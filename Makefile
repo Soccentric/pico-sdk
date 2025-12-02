@@ -179,12 +179,14 @@ endif
 zephyr-all: check-docker
 ifndef BOARD
 	@echo "[ERROR] BOARD parameter required"
-	@echo "Usage: make zephyr-all BOARD=rpi_pico|rpi_pico/rp2040/w|rpi_pico2|... PROJECT=myproject"
+	@echo "Usage: make zephyr-all BOARD=<board> PROJECT=myproject"
+	@echo "Boards: rpi_pico, rpi_pico/rp2040/w, rpi_pico2/rp2350a/m33, rpi_pico2/rp2350a/m33/w"
 	@exit 1
 endif
 ifndef PROJECT
 	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make zephyr-all BOARD=rpi_pico|rpi_pico/rp2040/w|rpi_pico2|... PROJECT=myproject"
+	@echo "Usage: make zephyr-all BOARD=<board> PROJECT=myproject"
+	@echo "Boards: rpi_pico, rpi_pico/rp2040/w, rpi_pico2/rp2350a/m33, rpi_pico2/rp2350a/m33/w"
 	@exit 1
 endif
 	@echo ""
