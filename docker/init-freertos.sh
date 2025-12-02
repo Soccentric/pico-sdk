@@ -1226,7 +1226,10 @@ This project is **portable** and can be compiled independently using Docker.
 ### Build
 
 ```bash
-# Build for Pico (default)
+# Build for Pico 2 W (default)
+make build
+
+# Build for Pico
 make build BOARD=pico
 
 # Build for Pico W
@@ -1313,7 +1316,7 @@ PROJECT_DIR := $(shell pwd)
 
 # Build configuration
 BUILD_TYPE ?= Release
-BOARD ?= pico
+BOARD ?= pico2_w
 JOBS ?= $(shell nproc 2>/dev/null || echo 4)
 
 .PHONY: help build clean rebuild shell debug release

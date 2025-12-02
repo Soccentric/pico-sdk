@@ -66,8 +66,7 @@ FREERTOS BOARDS:
 ZEPHYR BOARDS:
     rpi_pico                    Raspberry Pi Pico
     rpi_pico/rp2040/w           Raspberry Pi Pico W
-    rpi_pico2                   Raspberry Pi Pico 2
-    rpi_pico2/rp2350a/m33       Raspberry Pi Pico 2 (M33)
+    rpi_pico2/rp2350a/m33       Raspberry Pi Pico 2
     rpi_pico2/rp2350a/m33/w     Raspberry Pi Pico 2 W
 
 EXAMPLES:
@@ -228,9 +227,12 @@ build_zephyr() {
     
     # Find and source Zephyr environment
     local ZEPHYR_ENV=""
+    local PROJECT_PARENT=$(dirname "$PROJECT")
     local SEARCH_PATHS=(
+        "${PROJECT_PARENT}/zephyr/zephyr-env.sh"
+        "${PROJECT_PARENT}/../zephyr/zephyr-env.sh"
         "/workspace/firmware/zephyr/zephyr/zephyr-env.sh"
-        "/workspace/firmware/zephyr/zephyr-main/zephyr-env.sh"
+        "/workspace/firmware/*/zephyr/zephyr-env.sh"
         "${ZEPHYR_BASE:-}/zephyr-env.sh"
     )
     

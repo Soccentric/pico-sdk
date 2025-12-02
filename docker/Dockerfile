@@ -92,7 +92,7 @@ RUN mkdir -p /home/ubuntu && chown ubuntu:ubuntu /home/ubuntu && \
     echo 'export PICO_ZEPHYR_PATH=/opt/pico-zephyr' >> /home/ubuntu/.bashrc
 
 # Copy and install the pico-init script
-COPY docker/pico-init.sh /usr/local/bin/pico-init
+COPY pico-init.sh /usr/local/bin/pico-init
 RUN chmod +x /usr/local/bin/pico-init
 
 # Ensure /workspace is owned by ubuntu

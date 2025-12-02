@@ -47,7 +47,7 @@ Production-ready Docker-based development environment for **Raspberry Pi Pico** 
 
 ```bash
 # Clone the repository
-git clone https://github.com/Soccentric/pico-sdk.git
+git clone https://github.com/Soccentric/pico-project.git
 cd pico-project
 
 # Build FreeRTOS for Pico (builds Docker image + initializes project + compiles)
@@ -235,7 +235,7 @@ make menuconfig # Open Kconfig menu
 |-------|----------------|--------------|
 | Pico | `pico` | `rpi_pico` |
 | Pico W | `pico_w` | `rpi_pico/rp2040/w` |
-| Pico 2 | `pico2` | `rpi_pico2` |
+| Pico 2 | `pico2` | `rpi_pico2/rp2350a/m33` |
 | Pico 2 W | `pico2_w` | `rpi_pico2/rp2350a/m33/w` |
 
 ## Project Architecture

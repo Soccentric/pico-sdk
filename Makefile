@@ -10,6 +10,7 @@ ROOT_DIR := $(shell pwd)
 
 # Build configuration
 BUILD_TYPE ?= Release
+BOARD ?= pico2_w
 JOBS ?= $(shell nproc)
 
 # Default targets
@@ -36,7 +37,8 @@ help:
 	@echo "  QUICK START - One-Shot Commands"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
 	@echo ""
-	@echo "  FreeRTOS (pico, pico_w, pico2, pico2_w):"
+	@echo "  FreeRTOS (pico, pico_w, pico2, pico2_w - default: pico2_w):"
+	@echo "    make freertos-all PROJECT=myapp                Build for Pico 2 W (default)"
 	@echo "    make freertos-all BOARD=pico PROJECT=myapp     Build for Pico"
 	@echo "    make freertos-all BOARD=pico_w PROJECT=myapp   Build for Pico W"
 	@echo "    make freertos-all BOARD=pico2 PROJECT=myapp    Build for Pico 2"
@@ -45,7 +47,7 @@ help:
 	@echo "  Zephyr:"
 	@echo "    make zephyr-all BOARD=rpi_pico PROJECT=myapp   Build for Pico"
 	@echo "    make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=myapp  Build for Pico W"
-	@echo "    make zephyr-all BOARD=rpi_pico2 PROJECT=myapp  Build for Pico 2"
+	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33 PROJECT=myapp  Build for Pico 2"
 	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=myapp  Build for Pico 2 W"
 	@echo ""
 	@echo "  DOCKER MANAGEMENT"
@@ -108,7 +110,7 @@ check-docker:
 
 build:
 	@echo "[INFO] Building Docker development environment..."
-	docker build -t $(IMAGE_NAME) -f docker/Dockerfile .
+	docker build -t $(IMAGE_NAME) -f docker/Dockerfile docker/
 
 rebuild:
 	@echo "[INFO] Rebuilding Docker development environment..."
@@ -138,14 +140,9 @@ run: check-docker
 # One-Shot Builds (Build + Initialize + Compile)
 #==============================================================================
 freertos-all: check-docker
-ifndef BOARD
-	@echo "[ERROR] BOARD parameter required"
-	@echo "Usage: make freertos-all BOARD=pico|pico_w|pico2|pico2_w PROJECT=myproject"
-	@exit 1
-endif
 ifndef PROJECT
 	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make freertos-all BOARD=pico|pico_w|pico2|pico2_w PROJECT=myproject"
+	@echo "Usage: make freertos-all [BOARD=pico|pico_w|pico2|pico2_w] PROJECT=myproject"
 	@exit 1
 endif
 	@echo ""
@@ -326,7 +323,7 @@ build-zephyr-pico2: check-docker
 		--user ubuntu \
 		-v $(ROOT_DIR):/workspace \
 		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico2
+		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico2/rp2350a/m33
 
 build-zephyr-pico2-w: check-docker
 	@echo "[INFO] Building Zephyr for Pico 2 W..."

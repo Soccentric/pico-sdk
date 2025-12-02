@@ -158,7 +158,7 @@ for board in "${FREERTOS_BOARDS[@]}"; do
     log_info "Building FreeRTOS for ${BOLD}$board${NC}..."
     start=$(date +%s)
     
-    if make freertos-all BOARD="$board" > /tmp/build_$$.log 2>&1; then
+    if make freertos-all BOARD="$board" PROJECT=test_freertos > /tmp/build_$$.log 2>&1; then
         status="PASS"
         ((++total_pass))
     else
@@ -200,7 +200,7 @@ for board in "${ZEPHYR_BOARDS[@]}"; do
     log_info "Building Zephyr for ${BOLD}$board${NC}..."
     start=$(date +%s)
     
-    if make zephyr-all BOARD="$board" > /tmp/build_$$.log 2>&1; then
+    if make zephyr-all BOARD="$board" PROJECT=test_zephyr > /tmp/build_$$.log 2>&1; then
         status="PASS"
         ((++total_pass))
     else

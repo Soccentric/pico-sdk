@@ -66,9 +66,9 @@ This single command will:
 ### Other Boards
 
 ```bash
-make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=my_app        # Pico W
-make zephyr-all BOARD=rpi_pico2 PROJECT=my_app                # Pico 2
-make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=my_app  # Pico 2 W
+make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=my_app          # Pico W
+make zephyr-all BOARD=rpi_pico2/rp2350a/m33 PROJECT=my_app      # Pico 2
+make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=my_app    # Pico 2 W
 ```
 
 ---
