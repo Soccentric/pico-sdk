@@ -13,6 +13,7 @@ Production-ready Docker-based development environment for **Raspberry Pi Pico** 
 - 📱 **All Pico variants** - Pico, Pico W, Pico 2, Pico 2 W
 - 🛠️ **Complete toolchain** - ARM GCC, CMake, West, picotool, OpenOCD
 - 📦 **One-shot builds** - Build everything with a single command
+- ✅ **Comprehensive testing** - Automated testing for all board configurations
 
 ## Table of Contents
 
@@ -24,6 +25,7 @@ Production-ready Docker-based development environment for **Raspberry Pi Pico** 
 - [Board Variants](#board-variants)
 - [Project Architecture](#project-architecture)
 - [Customization](#customization)
+- [Testing](#testing)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
@@ -40,6 +42,19 @@ Production-ready Docker-based development environment for **Raspberry Pi Pico** 
 - Linux, macOS, or Windows with WSL2
 - At least 8GB RAM (for Zephyr builds)
 - 15GB free disk space
+- **Build Times**: 
+  - Docker image build: ~10-15 minutes (first time)
+  - FreeRTOS project: ~2-3 minutes
+  - Zephyr project: ~15-30 minutes (first time, downloads ~2GB)
+
+### Build Dependencies
+
+This project automatically downloads and builds:
+- **Raspberry Pi Pico SDK** (official)
+- **FreeRTOS Kernel** (latest stable)
+- **Zephyr RTOS** (~2GB download on first use)
+- **ARM GCC Toolchain** (cross-compiler)
+- **Build tools**: CMake, Ninja, West, picotool, OpenOCD
 
 ## Quick Start
 
@@ -47,18 +62,18 @@ Production-ready Docker-based development environment for **Raspberry Pi Pico** 
 
 ```bash
 # Clone the repository
-git clone https://github.com/Soccentric/pico-project.git
-cd pico-project
+git clone https://github.com/Soccentric/pico-sdk.git
+cd pico-sdk
 
 # Build FreeRTOS for Pico (builds Docker image + initializes project + compiles)
-make freertos-all BOARD=pico PROJECT=my_freertos_app
+make freertos PROJECT=my_freertos_app
 ```
 
 ### One-Shot Zephyr Build
 
 ```bash
 # Build Zephyr for Pico (first run takes longer to download Zephyr)
-make zephyr-all BOARD=rpi_pico PROJECT=my_zephyr_app
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico
 ```
 
 ### Flashing
@@ -217,8 +232,9 @@ make menuconfig # Open Kconfig menu
 
 | Target | Description |
 |--------|-------------|
-| `make freertos-all BOARD=<board> PROJECT=<name>` | Complete FreeRTOS build |
-| `make zephyr-all BOARD=<board> PROJECT=<name>` | Complete Zephyr build |
+| `make freertos PROJECT=<name>` | Complete FreeRTOS build (Pico 2 W default) |
+| `make freertos PROJECT=<name> BOARD=<board>` | Complete FreeRTOS build for specific board |
+| `make zephyr PROJECT=<name> BOARD=<board>` | Complete Zephyr build |
 
 ### Individual Builds
 
@@ -241,21 +257,35 @@ make menuconfig # Open Kconfig menu
 ## Project Architecture
 
 ```
-pico-project/
+pico-sdk/
 ├── Makefile                  # Main build orchestration
 ├── README.md                 # This file
-├── QUICKSTART.md            # Quick start guide
 ├── test-all.sh              # CI test script
 ├── docker/
 │   ├── Dockerfile           # Development environment
 │   ├── build.sh             # Universal build script
 │   ├── init-freertos.sh     # FreeRTOS project generator
-│   ├── init-zephyr.sh       # Zephyr project generator
-│   └── pico-init.sh         # Custom project generator
+│   └── init-zephyr.sh       # Zephyr project generator
 └── firmware/                 # Generated projects (gitignored)
     └── <project_name>/      # Your named project (standalone git repo)
         └── app/             # Zephyr application directory (for Zephyr projects)
 ```
+
+### What This Project Provides
+
+This project is a **development environment wrapper** that:
+
+1. **Docker Environment**: Provides a consistent, pre-configured build environment with all necessary tools
+2. **Project Templates**: Generates production-ready FreeRTOS and Zephyr project templates
+3. **Build Automation**: Simplifies the complex build process for Pico development
+4. **Multi-Board Support**: Handles differences between Pico variants (RP2040 vs RP2350)
+5. **Testing Framework**: Automated testing across all supported board configurations
+
+### Relationship to Official SDK
+
+- **Official Pico SDK**: This project uses the official Raspberry Pi Pico SDK inside Docker
+- **Not a Replacement**: This is a convenience layer, not a fork of the official SDK
+- **Compatible**: Generated projects work with the official SDK outside this environment
 
 ### Generated Project Features
 
@@ -266,29 +296,31 @@ Each generated project:
 - Can be **moved anywhere** and built independently
 - Contains all necessary configuration and source files
 
-## Customization
+## Testing
 
-### FreeRTOS Configuration
+The project includes comprehensive automated testing to ensure all board configurations build successfully.
 
-1. **Task settings**: Edit `include/app_config.h`
-   - Stack sizes, priorities, timing
-   
-2. **Kernel settings**: Edit `config/FreeRTOSConfig.h`
-   - Heap size, tick rate, features
+### Run All Tests
 
-3. **Application logic**: Edit `src/app_tasks.c`
-   - Implement your main application in `prvMainTask()`
+```bash
+# Test all FreeRTOS and Zephyr board configurations
+make test-all
+```
 
-### Zephyr Configuration
+This will:
+- Clean previous builds
+- Build FreeRTOS for all supported boards (Pico, Pico W, Pico 2, Pico 2 W)
+- Build Zephyr for all supported boards
+- Report success/failure for each configuration
+- Display total build time and summary
 
-1. **Kconfig settings**: Edit `prj.conf`
-   - Enable drivers, logging, shell
+### Test Results
 
-2. **App settings**: Edit `Kconfig`
-   - Add custom configuration options
-
-3. **Application logic**: Edit `src/main.c`
-   - Implement your main application in `main_app_thread()`
+The test script provides:
+- ✅ **Visual feedback** with progress bars and status indicators
+- 📊 **Build statistics** including duration and success rates
+- 🎯 **Detailed reporting** for each board configuration
+- 🚨 **Clear failure indication** if any builds fail
 
 ## Troubleshooting
 
@@ -303,11 +335,11 @@ make build
 ```bash
 # Remove and reinitialize (replace <project_name> with your project name)
 rm -rf firmware/<project_name>
-make init-freertos PROJECT=<project_name>
+make freertos PROJECT=<project_name>
 
 # Or for Zephyr
 rm -rf firmware/<project_name>
-make init-zephyr PROJECT=<project_name>
+make zephyr PROJECT=<project_name> BOARD=rpi_pico
 ```
 
 ### Build Errors
@@ -315,7 +347,20 @@ make init-zephyr PROJECT=<project_name>
 ```bash
 # Clean rebuild
 make clean
-make freertos-all BOARD=pico PROJECT=my_app
+make freertos PROJECT=my_app BOARD=pico
+```
+
+### Zephyr Download Issues
+
+Zephyr builds require downloading ~2GB of dependencies on first use:
+
+```bash
+# Check available disk space
+df -h
+
+# If download fails, clean and retry
+make clean
+make zephyr PROJECT=my_app BOARD=rpi_pico
 ```
 
 ### Permission Issues
@@ -323,6 +368,21 @@ make freertos-all BOARD=pico PROJECT=my_app
 ```bash
 sudo usermod -a -G dialout,plugdev $USER
 # Log out and back in
+```
+
+### Out of Memory (Zephyr Builds)
+
+Zephyr builds require significant RAM. If you encounter memory issues:
+
+```bash
+# Reduce parallel jobs
+export MAKEFLAGS="-j2"
+
+# Or add swap space (Linux)
+sudo fallocate -l 4G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
 ```
 
 ### Serial Monitor
@@ -333,6 +393,19 @@ minicom -D /dev/ttyACM0 -b 115200
 
 # Or with screen
 screen /dev/ttyACM0 115200
+```
+
+### Docker Issues
+
+```bash
+# Check Docker is running
+docker info
+
+# Clean Docker cache if builds fail
+docker system prune -a
+
+# Check Docker disk usage
+docker system df
 ```
 
 ## Contributing
@@ -358,6 +431,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Component Licenses
 
+This project bundles or references several open-source components:
+
 - **Raspberry Pi Pico SDK**: BSD 3-Clause License
-- **FreeRTOS Kernel**: MIT License
+- **FreeRTOS Kernel**: MIT License  
 - **Zephyr RTOS**: Apache 2.0 License
+- **ARM GCC Toolchain**: GNU GPL v3 (build tools)
+- **Docker Environment**: MIT License (this project)
+
+### Project Relationship
+
+This project is **not affiliated with** or **endorsed by** Raspberry Pi Ltd. It provides a convenient Docker-based development environment that uses the official Raspberry Pi Pico SDK and other open-source components. All trademarks and copyrights belong to their respective owners.
