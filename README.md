@@ -69,6 +69,8 @@ cd pico-sdk
 make freertos PROJECT=my_freertos_app
 ```
 
+**Note**: Default board is Pico 2 W. Use `BOARD=<board>` to specify a different board.
+
 ### One-Shot Zephyr Build
 
 ```bash
@@ -165,16 +167,16 @@ firmware/<project_name>/app/
 make build
 
 # Step 2: Initialize FreeRTOS project with a name
-make init-freertos PROJECT=my_freertos_app
+make freertos PROJECT=my_freertos_app BOARD=pico
 
 # Step 3: Build for your target board
-make build-freertos-pico       # Pico
-make build-freertos-pico-w     # Pico W
-make build-freertos-pico2      # Pico 2
-make build-freertos-pico2-w    # Pico 2 W
+make freertos PROJECT=my_freertos_app BOARD=pico         # Pico
+make freertos PROJECT=my_freertos_app BOARD=pico_w       # Pico W
+make freertos PROJECT=my_freertos_app BOARD=pico2        # Pico 2
+make freertos PROJECT=my_freertos_app BOARD=pico2_w      # Pico 2 W
 
 # Debug build (with symbols, no optimization)
-make build-freertos-pico BUILD_TYPE=Debug
+make freertos PROJECT=my_freertos_app BUILD_TYPE=Debug
 ```
 
 ### Zephyr Development
@@ -184,13 +186,13 @@ make build-freertos-pico BUILD_TYPE=Debug
 make build
 
 # Step 2: Initialize Zephyr workspace with a name (downloads ~2GB)
-make init-zephyr PROJECT=my_zephyr_app
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico
 
 # Step 3: Build for your target board
-make build-zephyr-pico         # Pico
-make build-zephyr-pico-w       # Pico W
-make build-zephyr-pico2        # Pico 2
-make build-zephyr-pico2-w      # Pico 2 W
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico                    # Pico
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico/rp2040/w           # Pico W
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico2/rp2350a/m33       # Pico 2
+make zephyr PROJECT=my_zephyr_app BOARD=rpi_pico2/rp2350a/m33/w     # Pico 2 W
 ```
 
 ### Local Project Builds
