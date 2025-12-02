@@ -1,32 +1,21 @@
 #==============================================================================
-# Raspberry Pi Pico RTOS Development Environment
-# Docker-based build system for FreeRTOS and Zephyr projects
+# Raspberry Pi Pico RTOS Development Environment (Simplified)
 #==============================================================================
 
-# Docker configuration
 IMAGE_NAME := rpi-pico-dev
 CONTAINER_NAME := pico-dev
 ROOT_DIR := $(shell pwd)
-
-# Build configuration
 BUILD_TYPE ?= Release
 BOARD ?= pico2_w
-JOBS ?= $(shell nproc)
 
-# Default targets
 .DEFAULT_GOAL := help
+.PHONY: help freertos zephyr shell clean clean-all rebuild test-all
 
-.PHONY: help \
-	build rebuild shell clean clean-all \
-	init-freertos init-zephyr init \
-	freertos-all zephyr-all \
-	build-freertos-pico build-freertos-pico-w build-freertos-pico2 build-freertos-pico2-w \
-	build-zephyr-pico build-zephyr-pico-w build-zephyr-pico2 build-zephyr-pico2-w \
-	build-pico build-pico-w build-pico2 build-pico2-w \
-	test-all check-docker version
+# Docker run command template
+DOCKER_RUN = docker run --rm --user ubuntu -v $(ROOT_DIR):/workspace $(IMAGE_NAME)
 
 #==============================================================================
-# Help Target
+# Help
 #==============================================================================
 help:
 	@echo ""
@@ -34,386 +23,110 @@ help:
 	@echo "  Raspberry Pi Pico RTOS Development Environment"
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
-	@echo "  QUICK START - One-Shot Commands"
+	@echo "  ONE-COMMAND BUILD (creates project if needed, then builds):"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
 	@echo ""
-	@echo "  FreeRTOS (pico, pico_w, pico2, pico2_w - default: pico2_w):"
-	@echo "    make freertos-all PROJECT=myapp                Build for Pico 2 W (default)"
-	@echo "    make freertos-all BOARD=pico PROJECT=myapp     Build for Pico"
-	@echo "    make freertos-all BOARD=pico_w PROJECT=myapp   Build for Pico W"
-	@echo "    make freertos-all BOARD=pico2 PROJECT=myapp    Build for Pico 2"
-	@echo "    make freertos-all BOARD=pico2_w PROJECT=myapp  Build for Pico 2 W"
+	@echo "  FreeRTOS:"
+	@echo "    make freertos PROJECT=myapp                    # Pico 2 W (default)"
+	@echo "    make freertos PROJECT=myapp BOARD=pico         # Pico"
+	@echo "    make freertos PROJECT=myapp BOARD=pico_w       # Pico W"
+	@echo "    make freertos PROJECT=myapp BOARD=pico2        # Pico 2"
 	@echo ""
 	@echo "  Zephyr:"
-	@echo "    make zephyr-all BOARD=rpi_pico PROJECT=myapp   Build for Pico"
-	@echo "    make zephyr-all BOARD=rpi_pico/rp2040/w PROJECT=myapp  Build for Pico W"
-	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33 PROJECT=myapp  Build for Pico 2"
-	@echo "    make zephyr-all BOARD=rpi_pico2/rp2350a/m33/w PROJECT=myapp  Build for Pico 2 W"
+	@echo "    make zephyr PROJECT=myapp BOARD=rpi_pico                    # Pico"
+	@echo "    make zephyr PROJECT=myapp BOARD=rpi_pico/rp2040/w           # Pico W"
+	@echo "    make zephyr PROJECT=myapp BOARD=rpi_pico2/rp2350a/m33       # Pico 2"
+	@echo "    make zephyr PROJECT=myapp BOARD=rpi_pico2/rp2350a/m33/w     # Pico 2 W"
 	@echo ""
-	@echo "  DOCKER MANAGEMENT"
+	@echo "  OTHER COMMANDS:"
 	@echo "  ─────────────────────────────────────────────────────────────────────"
+	@echo "    make shell       # Interactive dev shell"
+	@echo "    make rebuild     # Rebuild Docker image"
+	@echo "    make clean       # Remove firmware builds"
+	@echo "    make clean-all   # Remove everything"
+	@echo "    make test-all    # Test all board configurations"
 	@echo ""
-	@echo "    make build                Build Docker image"
-	@echo "    make rebuild              Force rebuild Docker image"
-	@echo "    make shell                Interactive development shell"
-	@echo "    make clean                Remove firmware build artifacts"
-	@echo "    make clean-all            Remove everything (firmware + docker)"
-	@echo ""
-	@echo "  PROJECT INITIALIZATION"
-	@echo "  ─────────────────────────────────────────────────────────────────────"
-	@echo ""
-	@echo "    make init-freertos PROJECT=name   Initialize FreeRTOS project"
-	@echo "    make init-zephyr PROJECT=name     Initialize Zephyr project"
-	@echo "    make init PROJECT=name            Create custom Pico project"
-	@echo ""
-	@echo "  INDIVIDUAL BUILDS"
-	@echo "  ─────────────────────────────────────────────────────────────────────"
-	@echo ""
-	@echo "  FreeRTOS (RP2040 only):"
-	@echo "    make build-freertos-pico          Pico"
-	@echo "    make build-freertos-pico-w        Pico W"
-	@echo "    (pico2/pico2_w: pending FreeRTOS RP2350 port)"
-	@echo ""
-	@echo "  Zephyr (all boards):"
-	@echo "    make build-zephyr-pico            Pico"
-	@echo "    make build-zephyr-pico-w          Pico W"
-	@echo "    make build-zephyr-pico2           Pico 2"
-	@echo "    make build-zephyr-pico2-w         Pico 2 W"
-	@echo ""
-	@echo "  OPTIONS"
-	@echo "  ─────────────────────────────────────────────────────────────────────"
-	@echo ""
-	@echo "    BUILD_TYPE=Debug|Release  Build type (default: Release)"
-	@echo "    JOBS=N                    Parallel jobs (default: $(JOBS))"
-	@echo ""
-	@echo "  TESTING"
-	@echo "  ─────────────────────────────────────────────────────────────────────"
-	@echo ""
-	@echo "    make test-all             Test all supported board configurations"
+	@echo "  OPTIONS: BUILD_TYPE=Debug|Release (default: Release)"
 	@echo ""
 	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 	@echo ""
 
 #==============================================================================
-# Version Information
+# Docker Setup (auto-builds if needed)
 #==============================================================================
-version:
-	@echo "Pico RTOS Development Environment v2.0.0"
-	@echo "Docker Image: $(IMAGE_NAME)"
-
-#==============================================================================
-# Docker Management
-#==============================================================================
-check-docker:
+.docker-image:
 	@docker image inspect $(IMAGE_NAME) >/dev/null 2>&1 || \
-		(echo "[INFO] Docker image '$(IMAGE_NAME)' not found. Building..." && $(MAKE) build)
-
-build:
-	@echo "[INFO] Building Docker development environment..."
-	docker build -t $(IMAGE_NAME) -f docker/Dockerfile docker/
+		(echo "[INFO] Building Docker image..." && \
+		docker build -t $(IMAGE_NAME) -f docker/Dockerfile docker/)
 
 rebuild:
-	@echo "[INFO] Rebuilding Docker development environment..."
-	docker rmi -f $(IMAGE_NAME) 2>/dev/null || true
-	$(MAKE) build
-
-shell: check-docker
-	@echo "[INFO] Starting interactive development shell..."
-	docker run -it --rm \
-		--name $(CONTAINER_NAME) \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		-w /workspace \
-		$(IMAGE_NAME) \
-		/bin/bash
-
-run: check-docker
-	docker run -it --rm \
-		--name $(CONTAINER_NAME) \
-		--privileged \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		-v /dev:/dev \
-		$(IMAGE_NAME)
+	@echo "[INFO] Rebuilding Docker image..."
+	@docker rmi -f $(IMAGE_NAME) 2>/dev/null || true
+	docker build -t $(IMAGE_NAME) -f docker/Dockerfile docker/
 
 #==============================================================================
-# One-Shot Builds (Build + Initialize + Compile)
+# One-Command Builds (auto-init + build)
 #==============================================================================
-freertos-all: check-docker
+freertos: .docker-image
 ifndef PROJECT
-	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make freertos-all [BOARD=pico|pico_w|pico2|pico2_w] PROJECT=myproject"
-	@exit 1
+	$(error PROJECT required. Usage: make freertos PROJECT=myapp [BOARD=pico|pico_w|pico2|pico2_w])
 endif
 	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  FreeRTOS One-Shot Build for $(BOARD) - Project: $(PROJECT)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
+	@echo "━━━ FreeRTOS Build: $(PROJECT) for $(BOARD) ━━━"
 	@if [ ! -d "firmware/$(PROJECT)" ]; then \
-		echo "[STEP 1/2] Initializing FreeRTOS project: $(PROJECT)..."; \
-		$(MAKE) init-freertos PROJECT=$(PROJECT); \
+		echo "[1/2] Creating project..."; \
+		$(DOCKER_RUN) ./docker/init-freertos.sh $(PROJECT); \
 	else \
-		echo "[STEP 1/2] FreeRTOS project $(PROJECT) already exists, skipping..."; \
+		echo "[1/2] Project exists, skipping init..."; \
 	fi
+	@echo "[2/2] Building..."
+	@$(DOCKER_RUN) ./docker/build.sh -t freertos -p /workspace/firmware/$(PROJECT) -b $(BOARD) \
+		$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
 	@echo ""
-	@echo "[STEP 2/2] Building for $(BOARD)..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t freertos -p /workspace/firmware/$(PROJECT) -b $(BOARD) \
-			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  ✅ SUCCESS! FreeRTOS firmware ready"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "Firmware: firmware/$(PROJECT)/build/*.uf2"
-	@echo ""
-	@echo "To flash:"
-	@echo "  1. Hold BOOTSEL button while connecting Pico"
-	@echo "  2. Copy .uf2 file to RPI-RP2 drive"
+	@echo "✅ Done! Firmware: firmware/$(PROJECT)/build/*.uf2"
+	@echo "   Flash: Hold BOOTSEL, connect Pico, copy .uf2 to RPI-RP2"
 	@echo ""
 
-zephyr-all: check-docker
+zephyr: .docker-image
+ifndef PROJECT
+	$(error PROJECT required. Usage: make zephyr PROJECT=myapp BOARD=<board>)
+endif
 ifndef BOARD
-	@echo "[ERROR] BOARD parameter required"
-	@echo "Usage: make zephyr-all BOARD=<board> PROJECT=myproject"
-	@echo "Boards: rpi_pico, rpi_pico/rp2040/w, rpi_pico2/rp2350a/m33, rpi_pico2/rp2350a/m33/w"
-	@exit 1
-endif
-ifndef PROJECT
-	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make zephyr-all BOARD=<board> PROJECT=myproject"
-	@echo "Boards: rpi_pico, rpi_pico/rp2040/w, rpi_pico2/rp2350a/m33, rpi_pico2/rp2350a/m33/w"
-	@exit 1
+	$(error BOARD required. Options: rpi_pico, rpi_pico/rp2040/w, rpi_pico2/rp2350a/m33, rpi_pico2/rp2350a/m33/w)
 endif
 	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  Zephyr One-Shot Build for $(BOARD) - Project: $(PROJECT)"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
+	@echo "━━━ Zephyr Build: $(PROJECT) for $(BOARD) ━━━"
 	@if [ ! -d "firmware/$(PROJECT)/app" ]; then \
-		echo "[STEP 1/2] Initializing Zephyr project: $(PROJECT)..."; \
-		$(MAKE) init-zephyr PROJECT=$(PROJECT); \
+		echo "[1/2] Creating project..."; \
+		$(DOCKER_RUN) ./docker/init-zephyr.sh $(PROJECT); \
 	else \
-		echo "[STEP 1/2] Zephyr project $(PROJECT) already initialized, skipping..."; \
+		echo "[1/2] Project exists, skipping init..."; \
 	fi
+	@echo "[2/2] Building..."
+	@$(DOCKER_RUN) ./docker/build.sh -t zephyr -p /workspace/firmware/$(PROJECT)/app -b $(BOARD)
 	@echo ""
-	@echo "[STEP 2/2] Building for $(BOARD)..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/$(PROJECT)/app -b $(BOARD)
-	@echo ""
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo "  ✅ SUCCESS! Zephyr firmware ready"
-	@echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-	@echo ""
-	@echo "Firmware: firmware/$(PROJECT)/app/build/zephyr/zephyr.uf2"
-	@echo ""
-	@echo "To flash:"
-	@echo "  1. Hold BOOTSEL button while connecting Pico"
-	@echo "  2. Copy .uf2 file to RPI-RP2 drive"
+	@echo "✅ Done! Firmware: firmware/$(PROJECT)/app/build/zephyr/zephyr.uf2"
+	@echo "   Flash: Hold BOOTSEL, connect Pico, copy .uf2 to RPI-RP2"
 	@echo ""
 
 #==============================================================================
-# Project Initialization
+# Development Shell
 #==============================================================================
-init-freertos: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make init-freertos PROJECT=myproject"
-	@exit 1
-endif
-	@echo "[INFO] Initializing FreeRTOS project: $(PROJECT)..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/init-freertos.sh $(PROJECT)
-
-init-zephyr: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make init-zephyr PROJECT=myproject"
-	@exit 1
-endif
-	@echo "[INFO] Initializing Zephyr project: $(PROJECT) (this may take a while)..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/init-zephyr.sh $(PROJECT)
-
-init: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT name required"
-	@echo "Usage: make init PROJECT=myproject"
-	@exit 1
-endif
-	@echo "[INFO] Creating new Pico project: $(PROJECT)"
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		/bin/bash -c "cd /workspace && pico-init $(PROJECT)"
+shell: .docker-image
+	@echo "[INFO] Starting dev shell..."
+	docker run -it --rm --name $(CONTAINER_NAME) --user ubuntu \
+		-v $(ROOT_DIR):/workspace -w /workspace $(IMAGE_NAME) /bin/bash
 
 #==============================================================================
-# FreeRTOS Individual Builds
-#==============================================================================
-build-freertos-pico: check-docker
-	@echo "[INFO] Building FreeRTOS for Pico..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t freertos -p /workspace/firmware/freeRTOS -b pico \
-			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
-
-build-freertos-pico-w: check-docker
-	@echo "[INFO] Building FreeRTOS for Pico W..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t freertos -p /workspace/firmware/freeRTOS -b pico_w \
-			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
-
-build-freertos-pico2: check-docker
-	@echo "[INFO] Building FreeRTOS for Pico 2..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t freertos -p /workspace/firmware/freeRTOS -b pico2 \
-			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
-
-build-freertos-pico2-w: check-docker
-	@echo "[INFO] Building FreeRTOS for Pico 2 W..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t freertos -p /workspace/firmware/freeRTOS -b pico2_w \
-			$(if $(filter Debug,$(BUILD_TYPE)),-d,-r)
-
-#==============================================================================
-# Zephyr Individual Builds
-#==============================================================================
-build-zephyr-pico: check-docker
-	@echo "[INFO] Building Zephyr for Pico..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico
-
-build-zephyr-pico-w: check-docker
-	@echo "[INFO] Building Zephyr for Pico W..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico/rp2040/w
-
-build-zephyr-pico2: check-docker
-	@echo "[INFO] Building Zephyr for Pico 2..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico2/rp2350a/m33
-
-build-zephyr-pico2-w: check-docker
-	@echo "[INFO] Building Zephyr for Pico 2 W..."
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t zephyr -p /workspace/firmware/zephyr/app -b rpi_pico2/rp2350a/m33/w
-
-#==============================================================================
-# Custom Project Builds
-#==============================================================================
-build-pico: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT path required"
-	@echo "Usage: make build-pico PROJECT=/path/to/project TYPE=freertos|zephyr"
-	@exit 1
-endif
-ifndef TYPE
-	@echo "[ERROR] TYPE required"
-	@echo "Usage: make build-pico PROJECT=/path/to/project TYPE=freertos|zephyr"
-	@exit 1
-endif
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t $(TYPE) -p $(PROJECT) -b pico
-
-build-pico-w: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT path required"
-	@exit 1
-endif
-ifndef TYPE
-	@echo "[ERROR] TYPE required"
-	@exit 1
-endif
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t $(TYPE) -p $(PROJECT) -b pico_w
-
-build-pico2: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT path required"
-	@exit 1
-endif
-ifndef TYPE
-	@echo "[ERROR] TYPE required"
-	@exit 1
-endif
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t $(TYPE) -p $(PROJECT) -b pico2
-
-build-pico2-w: check-docker
-ifndef PROJECT
-	@echo "[ERROR] PROJECT path required"
-	@exit 1
-endif
-ifndef TYPE
-	@echo "[ERROR] TYPE required"
-	@exit 1
-endif
-	docker run --rm \
-		--user ubuntu \
-		-v $(ROOT_DIR):/workspace \
-		$(IMAGE_NAME) \
-		./docker/build.sh -t $(TYPE) -p $(PROJECT) -b pico2_w
-
-#==============================================================================
-# Testing
+# Testing & Cleanup
 #==============================================================================
 test-all:
-	@echo "[INFO] Running comprehensive test of all supported boards..."
 	./test-all.sh
 
-#==============================================================================
-# Cleanup
-#==============================================================================
 clean:
-	@echo "[INFO] Cleaning firmware build artifacts..."
+	@echo "[INFO] Cleaning firmware..."
 	rm -rf $(ROOT_DIR)/firmware
 
 clean-all: clean
 	@echo "[INFO] Removing Docker image..."
-	docker rmi -f $(IMAGE_NAME) 2>/dev/null || true
+	@docker rmi -f $(IMAGE_NAME) 2>/dev/null || true
